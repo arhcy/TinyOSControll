@@ -65,3 +65,13 @@ docs/                                       # SPEC.md, PLAN.md
 - [ ] Телеметрія (CPU, RAM, GPU) оновлюється в реальному часі
 - [ ] Таргет не має вхідних портів (`ss -tlnp` — лише локальні сокети)
 - [ ] sudoers містить лише дві команди; `sudo -l -U osagent` це підтверджує
+
+## 4. Журнал верифікації
+
+- 2026-09-19: go build, go vet, go test -count=1 — усі тести проходять; gofmt — чисто;
+  cross-compile linux/amd64 та linux/arm64 — успішно. Бинарі для розгортання у dist/ (linux/amd64).
+- Виправлено: API nhooyr.io/websocket v1.8.17 (Close, Accept) у internal/controller;
+  httptest.Server.Start у internal/dockerapi/client_test.go;
+  type-assertions до *net.UDPConn / *net.UnixConn у internal/wol/broadcast_linux.go
+  та internal/executor/server.go.
+- Інтеграційні тести (3.2/3.3) потребують двох Ubuntu-серверів — не виконано.
