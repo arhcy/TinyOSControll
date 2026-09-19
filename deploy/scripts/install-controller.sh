@@ -40,6 +40,5 @@ echo "API token: $API_TOKEN"
   echo "  key: /etc/osagent/certs/controller.key"
 } > deploy/controller/config/controller.yaml
 
-docker build -f deploy/Dockerfile.controller -t osagent-controller:local .
-docker compose -f deploy/controller/docker-compose.yml up -d
+docker compose -f deploy/controller/docker-compose.yml up -d --build
 echo "OK: controller installed. Panel: https://$WEB_HOST:8443"

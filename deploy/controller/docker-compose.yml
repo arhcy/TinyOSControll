@@ -1,6 +1,9 @@
 name: osagent-controller
 services:
   controller:
+    build:
+      context: ../..
+      dockerfile: deploy/Dockerfile.controller
     image: osagent-controller:local
     restart: unless-stopped
     network_mode: host   # WoL broadcast must reach the LAN

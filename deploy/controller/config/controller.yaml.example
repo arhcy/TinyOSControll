@@ -1,0 +1,17 @@
+# OS Control — control-сервер.
+# Скопіюйте в controller.yaml і заповніть значення.
+# api_token: openssl rand -hex 24
+listen:
+  web: ":8443"
+  management: ":9443"
+api_token: "CHANGE-ME"
+wol:
+  mac: "AA:BB:CC:DD:EE:FF"
+  ip: "192.168.1.10"
+  port: 9
+telemetry:
+  history_minutes: 60
+tls:
+  ca: /etc/osagent/certs/ca.crt
+  cert: /etc/osagent/certs/controller.crt
+  key: /etc/osagent/certs/controller.key

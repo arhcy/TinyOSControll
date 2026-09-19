@@ -48,6 +48,5 @@ IFS=',' read -ra CSLIST <<< "$CONTAINERS"
   echo "  key: /etc/osagent/certs/agent.key"
 } > deploy/target/config/agent.yaml
 
-docker build -f deploy/Dockerfile.agent -t osagent-agent:local .
-docker compose -f deploy/target/docker-compose.yml up -d
+docker compose -f deploy/target/docker-compose.yml up -d --build
 echo "OK: target installed"

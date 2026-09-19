@@ -1,0 +1,17 @@
+# OS Control — цільовий сервер.
+# Скопіюйте в agent.yaml і заповніть значення.
+controller:
+  url: wss://192.168.1.20:9443
+executor:
+  socket: /run/osagent/executor.sock
+docker:
+  endpoint: unix:///var/run/docker-proxy/docker.sock
+  containers:
+    - nginx
+    - postgres
+telemetry:
+  interval: 1s
+tls:
+  ca: /etc/osagent/certs/ca.crt
+  cert: /etc/osagent/certs/agent.crt
+  key: /etc/osagent/certs/agent.key

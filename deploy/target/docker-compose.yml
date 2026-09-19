@@ -10,6 +10,9 @@ services:
     networks: [osagent]
 
   agent:
+    build:
+      context: ../..
+      dockerfile: deploy/Dockerfile.agent
     image: osagent-agent:local
     restart: unless-stopped
     user: "10001:10001"   # must match the osagent uid on the host (SO_PEERCRED check)

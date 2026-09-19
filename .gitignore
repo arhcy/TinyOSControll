@@ -6,8 +6,10 @@ dist/
 .tools/
 go.zip
 
-# Generated secrets & configs (created by install scripts)
+# Generated secrets (created by gen-certs.sh)
 deploy/controller/certs/
 deploy/target/certs/
-deploy/controller/config/
-deploy/target/config/
+
+# Generated configs (created by install scripts; *.example files are committed)
+deploy/controller/config/controller.yaml
+deploy/target/config/agent.yaml
