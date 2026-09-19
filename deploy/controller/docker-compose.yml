@@ -1,0 +1,15 @@
+name: osagent-controller
+services:
+  controller:
+    image: osagent-controller:local
+    restart: unless-stopped
+    network_mode: host   # WoL broadcast must reach the LAN
+    read_only: true
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - ./config/controller.yaml:/etc/osagent/controller.yaml:ro
+      - ./certs:/etc/osagent/certs:ro
+    tmpfs:
+      - /tmp:size=16m

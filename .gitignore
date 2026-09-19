@@ -1,0 +1,13 @@
+# Build artifacts
+dist/
+*.exe
+
+# Local toolchains / temp
+.tools/
+go.zip
+
+# Generated secrets & configs (created by install scripts)
+deploy/controller/certs/
+deploy/target/certs/
+deploy/controller/config/
+deploy/target/config/

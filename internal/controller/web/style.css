@@ -1,0 +1,52 @@
+:root { color-scheme: dark; }
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background: #0f1420;
+  color: #dbe2ef;
+}
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 22px;
+  border-bottom: 1px solid #232c3f;
+}
+h1 { font-size: 20px; margin: 0; }
+main { display: grid; gap: 16px; padding: 18px 22px; max-width: 900px; margin: 0 auto; }
+.card {
+  background: #161d2e;
+  border: 1px solid #232c3f;
+  border-radius: 10px;
+  padding: 14px 18px;
+}
+.card h2 { margin: 0 0 10px; font-size: 15px; color: #9fb0cc; text-transform: uppercase; letter-spacing: .04em; }
+.muted { color: #8494b3; font-size: 14px; }
+.error { color: #ff7b72; }
+.buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+button {
+  background: #24406b;
+  color: #dbe2ef;
+  border: 1px solid #33507f;
+  border-radius: 6px;
+  padding: 7px 14px;
+  cursor: pointer;
+  font-size: 14px;
+}
+button:hover { background: #2c4d80; }
+button.danger { background: #5b2330; border-color: #7f3344; }
+button.danger:hover { background: #702b3b; }
+.status { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+.dot { width: 10px; height: 10px; border-radius: 50%; background: #ff7b72; }
+.status.online .dot { background: #3fb950; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid #232c3f; }
+.badge { padding: 2px 8px; border-radius: 10px; font-size: 12px; }
+.badge.ok { background: #12351f; color: #56d364; }
+.badge.bad { background: #3d1a22; color: #ff7b72; }
+.bar { display: inline-block; width: 140px; height: 10px; background: #232c3f; border-radius: 5px; overflow: hidden; vertical-align: middle; }
+.bar-fill { display: block; height: 100%; background: #448aff; }
+pre { background: #0b0f18; border: 1px solid #232c3f; border-radius: 8px; padding: 10px; font-size: 12px; overflow-x: auto; max-height: 300px; }
+footer { padding: 12px 22px; border-top: 1px solid #232c3f; font-size: 13px; color: #8494b3; display: flex; gap: 8px; align-items: center; }
+input { background: #0b0f18; border: 1px solid #33507f; color: #dbe2ef; border-radius: 6px; padding: 6px 10px; width: 220px; }

@@ -1,0 +1,18 @@
+[Unit]
+Description=OSControl host executor (allowlisted host commands)
+After=local-fs.target
+
+[Service]
+Type=simple
+User=osagent
+Group=osagent
+ExecStart=/usr/local/bin/osagent-executor --socket /run/osagent/executor.sock
+RuntimeDirectory=osagent
+RuntimeDirectoryMode=0750
+Restart=on-failure
+RestartSec=2
+# NoNewPrivileges is intentionally NOT set: the executor uses sudo for the
+# two allowlisted commands (systemctl poweroff, amd-smi monitor).
+
+[Install]
+WantedBy=multi-user.target

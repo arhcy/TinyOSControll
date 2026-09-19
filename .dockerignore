@@ -1,0 +1,5 @@
+.tools
+dist
+go.zip
+*.zip
+.git
