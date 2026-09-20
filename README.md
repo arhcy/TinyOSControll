@@ -55,7 +55,7 @@ sudo usermod -aG docker $USER   # вийти й увійти в сесію
 ## 1.1. Клон репозиторію
 
 ```bash
-git clone https://github.com/<owner>/osagent.git
+git clone https://github.com/arhcy/TinyOSControll.git
 cd osagent
 ```
 
