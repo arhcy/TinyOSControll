@@ -56,7 +56,7 @@ sudo usermod -aG docker $USER   # вийти й увійти в сесію
 
 ```bash
 git clone https://github.com/arhcy/TinyOSControll.git
-cd osagent
+cd TinyOSControll
 ```
 
 ## 1.2. Build-стадія: ключі + демони → volume
