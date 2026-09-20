@@ -25,3 +25,4 @@ services:
 
 volumes:
   osagent-build:
+    name: osagent-build
