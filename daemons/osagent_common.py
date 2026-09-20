@@ -26,12 +26,11 @@ class _JsonFormatter(logging.Formatter):
 
 
 def setup_logging():
-    logging.basicConfig(
-        stream=sys.stdout,
-        level=logging.INFO,
-        format=_JsonFormatter(),
-        datefmt="%Y-%m-%dT%H:%M:%S%z",
-    )
+    root = logging.getLogger()
+    root.setLevel(logging.INFO)
+    handler = logging.StreamHandler(sys.stdout)
+    handler.setFormatter(_JsonFormatter())
+    root.addHandler(handler)
     return logging.getLogger("osagent")
 
 
