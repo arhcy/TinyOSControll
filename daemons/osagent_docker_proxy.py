@@ -136,16 +136,12 @@ def main():
             pass
     if os.path.exists(args.listen):
         os.unlink(args.listen)
-    ln = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-    ln.bind(args.listen)
+    srv = UnixServer(args.listen, ProxyHandler)
     os.chmod(args.listen, 0o660)
     try:
         os.chown(args.listen, 0, osagent_gid())
     except (KeyError, PermissionError, OSError):
         pass
-    ln.listen(16)
-    srv = UnixServer((args.listen,), ProxyHandler)
-    srv.socket = ln
     srv.backend = args.backend
     srv.log = log
     log.info("docker proxy listening %s -> %s (allowlist: containers only)", args.listen, args.backend)

@@ -12,6 +12,7 @@ Restart=on-failure
 RestartSec=2
 NoNewPrivileges=true
 ProtectSystem=strict
+ReadWritePaths=/run/osagent
 ProtectHome=true
 PrivateTmp=true
 
