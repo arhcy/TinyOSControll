@@ -13,3 +13,4 @@ __pycache__/
 # The install bundle lives in the docker volume "osagent-build".
 # If you export it locally, keep it out of git:
 target-bundle/
+.kilo/
