@@ -22,3 +22,6 @@ services:
     command: ["python3", "-B", "/out/daemons/osagent_controller.py", "--config", "/out/config/controller.json"]
     tmpfs:
       - /tmp:size=16m
+
+volumes:
+  osagent-build:
