@@ -1,0 +1,19 @@
+[Unit]
+Description=OSControl docker socket proxy (containers API only)
+After=network-online.target docker.service osagent-executor.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+# root: must read /var/run/docker.sock; the proxy socket is chowned root:osagent
+ExecStart=/usr/bin/python3 -B /opt/osagent/daemons/osagent_docker_proxy.py --listen /run/osagent/docker.sock --backend /var/run/docker.sock
+SupplementaryGroups=docker
+Restart=on-failure
+RestartSec=2
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

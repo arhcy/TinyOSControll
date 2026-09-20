@@ -2,84 +2,91 @@
 
 Локальний інструмент керування цільовим Ubuntu-сервером з контрольного:
 веб-панель, телеметрія температур, Wake-on-LAN, вимкнення, керування
-визначеним у конфізі набором Docker-контейнерів.
+визначеними у конфізі набором Docker-контейнерів.
 
-- Спека: [docs/SPEC.md](docs/SPEC.md)
-- План виконання та тестування: [docs/PLAN.md](docs/PLAN.md)
+- Спека: `docs/SPEC.md`
+- План виконання та тестування: `docs/PLAN.md`
 
 ## Компоненти
 
 | Компонент | Де | Що робить |
 |---|---|---|
 | osagent-controller | Docker, Control | веб-панель (HTTPS), канал керування, WoL |
-| osagent-agent | Docker, Target | виконує дії, збирає телеметрію, з'єднується вихідно |
+| osagent-agent | systemd, Target | виконує дії, збирає телеметрію, з'єднується вихідно |
 | osagent-executor | systemd, Target | allowlist-команди хоста (sudo), unix-сокет + SO_PEERCRED |
-| docker-socket-proxy | Docker, Target | обмежений Docker API (лише containers) |
+| osagent-docker-proxy | systemd, Target | обмежений Docker API (лише containers) |
 
-Мова: Go. Протокол: JSON over WebSocket, mTLS (без SSH).
+Демони — **Python 3, лише стандартна бібліотека** (без pip, без збірки).
+Протокол: JSON over WebSocket, mTLS (без SSH). Go-код у репозиторії —
+reference-реалізація з тестами, у розгортанні не використовується.
 
----
+## Як влаштована інсталяція
 
-# Запуск під Dockerом
+1. **Build-стадія в контейнері** (на Control): контейнер `deploy/build/`
+   генерує TLS-ключі (openssl), пакує демони з `daemons/`, перевіряє
+   синтаксис ("білд"), генерує конфіги та інсталяційний скрипт. Усе
+   з'являється у **монтованому docker volume `osagent-build`**:
+   ключі, демони, конфіги, юніти, `install.sh`, MANIFEST (sha256).
+2. **Control**: контейнер контролера читає все з цього ж volume (read-only).
+3. **Target**: bundle з volume копіюється на сервер, і **sh-скрипт
+   `install.sh`** встановлює три демони як systemd-сервіси.
 
-Усі контейнерні частини запускаються через **Docker Compose**.
-Репозиторій завантажується з GitHub на обидва сервери.
+Хостам не потрібно нічого встановлювати понад стандартне:
+Control — Docker, Target — стандартний Ubuntu (python3, systemd) + Docker.
 
-**Спільні вимоги:** Ubuntu 22.04+, Docker Engine + Compose v2, git.
-Якщо Docker ще немає:
+## Вимоги
+
+| Сервер | Потребує |
+|---|---|
+| Control | Ubuntu 22.04+, Docker Engine + Compose v2, git |
+| Target | Ubuntu 22.04+, Docker Engine, python3 (3.8+, stdlib), systemd |
+
+Якщо Docker ще немає (Control і Target):
 
 ```bash
 curl -fsSL https://get.docker.com | sudo sh
 sudo usermod -aG docker $USER   # вийти й увійти в сесію
 ```
 
-Нижче — інструкції для кожного сервера окремо.
-**Спершу налаштовується Control, потім Target** (агенту потрібні
-сертифікати та панель, які з'являються на Control).
-
 ---
 
-## Сервер 1: Control
+# Сервер 1: Control
 
-### 1.1. Клон репозиторію
+## 1.1. Клон репозиторію
 
 ```bash
 git clone https://github.com/<owner>/osagent.git
 cd osagent
 ```
 
-### 1.2. Сертифікати (CA + controller + agent)
+## 1.2. Build-стадія: ключі + демони → volume
 
 ```bash
-# аргументи: <каталог> <hostname панелі> <IP control-сервера>
-bash deploy/scripts/gen-certs.sh deploy/controller/certs ctrl 192.168.1.20
+WEB_HOSTNAME=ctrl WEB_IP=192.168.1.20 WOL_MAC=AA:BB:CC:DD:EE:FF \
+  docker compose -f deploy/build/docker-compose.yml up --build
 ```
 
-- `ctrl` — ім'я хоста, за яким відкриватимете панель (з'явиться в SAN сертифіката);
-- `192.168.1.20` — IP control-сервера (агент перевірятиме його при mTLS).
+- `WEB_HOSTNAME` — ім'я хоста, за яким відкриватимете панель (SAN сертифіката);
+- `WEB_IP` — IP control-сервера (агент перевірятиме його при mTLS);
+- `WOL_MAC` — MAC-адреса **Target**-сервера (для Wake-on-LAN);
+- опційно: `WOL_IP`, `API_TOKEN` (інакше згенерується), `CONTROLLER_URL`,
+  `CONTAINERS`, `TELEMETRY_INTERVAL`.
 
-### 1.3. Конфіг
+У виводі буде рядок **`API token: …`** — збережіть його (він також у
+`BUNDLE_INFO.txt` в volume). Після запуску в volume `osagent-build`
+з'являються: `keys/`, `daemons/`, `config/`, `target/`, `install.sh`,
+`MANIFEST`, `BUNDLE_INFO.txt`.
+
+## 1.3. Запуск контролера
 
 ```bash
-cp deploy/controller/config/controller.yaml.example deploy/controller/config/controller.yaml
-openssl rand -hex 24    # результат — значення api_token
+docker compose -f deploy/controller/docker-compose.yml up -d
 ```
 
-Відкрийте `deploy/controller/config/controller.yaml` і заповніть:
+Контролер — контейнер `python:3.12-slim` (non-root, read-only, host-мережа
+для WoL-broadcast), монтує volume `osagent-build` read-only.
 
-| Поле | Що вписати |
-|---|---|
-| `api_token` | токен з `openssl rand -hex 24` (вхід у панель) |
-| `wol.mac` | MAC-адреса **Target**-сервера (для Wake-on-LAN) |
-| `wol.ip` | IP Target-сервера (напрямлений WoL, опційно) |
-
-### 1.4. Запуск
-
-```bash
-docker compose -f deploy/controller/docker-compose.yml up -d --build
-```
-
-### 1.5. Перевірка
+## 1.4. Перевірка
 
 ```bash
 docker compose -f deploy/controller/docker-compose.yml ps
@@ -90,209 +97,87 @@ curl -sk https://localhost:8443/api/status -H "X-API-Key: <api_token>"
 Відкрийте `https://<control-host>:8443` у браузері і введіть api_token.
 Поки Target не підключений, поле `agent_online` буде `false` — це нормально.
 
-> **Альтернатива одним скриптом** (робить 1.2–1.4 автоматично,
-> згенерує конфіг із аргументами):
->
-> ```bash
-> bash deploy/scripts/install-controller.sh \
->   --wol-mac AA:BB:CC:DD:EE:FF --wol-ip 192.168.1.10 \
->   --web-hostname ctrl --web-ip 192.168.1.20
-> ```
-
 ---
 
-## Сервер 2: Target
+# Сервер 2: Target
 
-### 2.1. Клон репозиторію
-
-```bash
-git clone https://github.com/<owner>/osagent.git
-cd osagent
-```
-
-### 2.2. Сертифікати з Control-сервера
-
-Скопіюйте три файли з `deploy/controller/certs/` на Control у
-`deploy/target/certs/` на Target:
+## 2.1. Експорт bundle з volume (на Control)
 
 ```bash
-mkdir -p deploy/target/certs
-scp <control>:/path/to/osagent/deploy/controller/certs/ca.crt     deploy/target/certs/
-scp <control>:/path/to/osagent/deploy/controller/certs/agent.crt  deploy/target/certs/
-scp <control>:/path/to/osagent/deploy/controller/certs/agent.key  deploy/target/certs/
+docker create --name osagent-export -v osagent-build:/out osagent-build:local /bin/true
+docker cp osagent-export:/out ./target-bundle
+docker rm osagent-export
+scp -r target-bundle <user>@<target>:/root/
 ```
 
-### 2.3. Executor (єдиний компонент поза контейнерами)
-
-Executor — systemd-демон на хості: виконує allowlist-команди
-(`systemctl poweroff`, `amd-smi monitor`) через точний sudo-allowlist
-і перевіряє клієнта за SO_PEERCRED.
+## 2.2. Встановлення (sh-скрипт, на Target)
 
 ```bash
-# користувач osagent з uid 10001 (має збігатися з user: у compose агента)
-sudo useradd --system --uid 10001 --no-create-home --shell /usr/sbin/nologin osagent
-
-# sudo-allowlist (лише дві команди)
-sudo install -m 0440 deploy/target/sudoers.d-osagent /etc/sudoers.d/osagent
-sudo visudo -cf /etc/sudoers.d/osagent
-
-# бинар (з dist/ у репо або збірка з Go):
-GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" \
-  -o dist/osagent-executor ./cmd/osagent-executor
-sudo install -m 0755 dist/osagent-executor /usr/local/bin/osagent-executor
-
-# systemd-юніт
-sudo install -m 0644 deploy/target/osagent-executor.service /etc/systemd/system/
-sudo systemctl daemon-reload
-sudo systemctl enable --now osagent-executor
-sudo systemctl status osagent-executor
+sudo bash /root/target-bundle/install.sh \
+  --controller-url wss://192.168.1.20:9443 \
+  --containers nginx,postgres
 ```
 
-### 2.4. Конфіг агента
+Скрипт (з bundle, згенерований build-стадією) робить усе сам:
+
+- перевіряє цілісність bundle (MANIFEST sha256 + openssl verify сертифіката);
+- створює системного користувача `osagent` (uid 10001);
+- встановлює демони в `/opt/osagent/daemons`, сертифікати в
+  `/etc/osagent/certs`, створює `/etc/osagent/agent.json`;
+- встановлює sudo-allowlist (`/etc/sudoers.d/osagent`, лише дві команди);
+- встановлює 3 systemd-юніти (`osagent-executor`, `osagent-docker-proxy`,
+  `osagent-agent`) і запускає їх;
+- перевіряє, що всі сервіси активні.
+
+Опційні аргументи: `--telemetry-interval 1`, `--prefix /opt/osagent`.
+Демонтування: `sudo bash install.sh --uninstall`.
+
+## 2.3. Перевірка
 
 ```bash
-cp deploy/target/config/agent.yaml.example deploy/target/config/agent.yaml
+systemctl status osagent-agent osagent-executor osagent-docker-proxy
+journalctl -u osagent-agent -f
 ```
 
-Відкрийте `deploy/target/config/agent.yaml` і заповніть:
-
-| Поле | Що вписати |
-|---|---|
-| `controller.url` | `wss://<control-host>:9443` або `wss://<control-ip>:9443` (hostname/IP має бути в SAN сертифіката) |
-| `docker.containers` | список імен контейнерів, якими керуємо (напр. `nginx`, `postgres`) |
-
-### 2.5. Запуск
-
-```bash
-docker compose -f deploy/target/docker-compose.yml up -d --build
-```
-
-Піднімаються два контейнери: `docker-proxy` (обмежений Docker API) і
-`agent` (non-root, read-only, з'єднується вихідно до Control).
-
-### 2.6. Перевірка
-
-```bash
-docker compose -f deploy/target/docker-compose.yml ps
-docker compose -f deploy/target/docker-compose.yml logs -f agent
-```
-
-У логах агента має з'явитися `connected to controller`. На панелі
-Control `agent_online` стане `true`, з'явиться телеметрія та список
-контейнерів.
-
-> **Альтернатива одним скриптом** (робить 2.3–2.5 автоматично,
-> сертифікати з 2.2 все одно треба скопіювати вручну):
->
-> ```bash
-> bash deploy/scripts/install-target.sh \
->   --controller-url wss://192.168.1.20:9443 --containers nginx,postgres
-> ```
+У логах агента має з'явитися `connected to controller`. На панелі Control
+`agent_online` стане `true`, з'явиться телеметрія та список контейнерів.
 
 ---
 
 ## Оновлення
 
 ```bash
-# на кожному з серверів:
+# Control: оновити код, пересобрати bundle, перезапустити контролер
 git pull
-docker compose -f deploy/<controller|target>/docker-compose.yml up -d --build
+WEB_HOSTNAME=ctrl WEB_IP=192.168.1.20 WOL_MAC=AA:BB:CC:DD:EE:FF \
+  docker compose -f deploy/build/docker-compose.yml up --build
+docker compose -f deploy/controller/docker-compose.yml up -d
+
+# Target: експортувати новий bundle (2.1), скопіювати, перевстановити
+sudo bash /root/target-bundle/install.sh \
+  --controller-url wss://192.168.1.20:9443 --containers nginx,postgres
 ```
 
-Для оновлення executor-бинара на Target повторіть збірку з 2.3 і
-`sudo systemctl restart osagent-executor`.
+Перевстановлення ідемпотентне: сервіси зупиняються, файли замінюються,
+конфіг `agent.json` перезаписується з аргументами скрипта.
 
 ## Зупинка
 
 ```bash
 docker compose -f deploy/controller/docker-compose.yml down   # Control
-docker compose -f deploy/target/docker-compose.yml down       # Target
-sudo systemctl stop osagent-executor                          # Target (за потреби)
+sudo bash install.sh --uninstall                              # Target
 ```
 
 ## Типові проблеми
 
 | Симптом | Що перевірити |
 |---|---|
-| `agent_online: false`, в логах агента `dial failed` | `controller.url` у agent.yaml; SAN сертифіката (hostname/IP); що панель на Control запущена |
-| `connection refused` / `rejected connection` в логах executor | uid користувача `osagent` на хості має бути **10001** (`id -u osagent`) |
-| WoL не будить | `wol.mac` у controller.yaml; WoL увімкнений у BIOS Target; вихідний UDP 9 з Control |
-| Керування контейнерами не працює | контейнери мають існувати на Target; `docker-proxy` у `ps`; ім'я в `docker.containers` |
-
----
-
-# Docker Compose файли
-
-Control — `deploy/controller/docker-compose.yml`:
-
-```yaml
-name: osagent-controller
-services:
-  controller:
-    build:
-      context: ../..
-      dockerfile: deploy/Dockerfile.controller
-    image: osagent-controller:local
-    restart: unless-stopped
-    network_mode: host   # WoL broadcast must reach the LAN
-    read_only: true
-    cap_drop: [ALL]
-    security_opt:
-      - no-new-privileges:true
-    volumes:
-      - ./config/controller.yaml:/etc/osagent/controller.yaml:ro
-      - ./certs:/etc/osagent/certs:ro
-    tmpfs:
-      - /tmp:size=16m
-```
-
-Target — `deploy/target/docker-compose.yml`:
-
-```yaml
-name: osagent-target
-services:
-  docker-proxy:
-    image: tecnativa/docker-socket-proxy:latest
-    restart: unless-stopped
-    command: ["containers=1", "-l", "unix:///var/run/docker-proxy/docker.sock"]
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - docker-proxy-sock:/var/run/docker-proxy
-    networks: [osagent]
-
-  agent:
-    build:
-      context: ../..
-      dockerfile: deploy/Dockerfile.agent
-    image: osagent-agent:local
-    restart: unless-stopped
-    user: "10001:10001"   # must match the osagent uid on the host (SO_PEERCRED check)
-    read_only: true
-    cap_drop: [ALL]
-    security_opt:
-      - no-new-privileges:true
-    volumes:
-      - ./config/agent.yaml:/etc/osagent/agent.yaml:ro
-      - ./certs:/etc/osagent/certs:ro
-      - /run/osagent:/run/osagent:ro
-      - docker-proxy-sock:/var/run/docker-proxy:ro
-    tmpfs:
-      - /tmp:size=16m
-    networks: [osagent]
-
-volumes:
-  docker-proxy-sock:
-
-networks:
-  osagent:
-```
-
----
-
-## Розробка
-
-- go build ./... ; go test ./... ; go vet ./...
-- GOOS=linux GOARCH=amd64 go build -o dist/osagent-executor ./cmd/osagent-executor
+| Build не стартує | `WEB_HOSTNAME`, `WEB_IP`, `WOL_MAC` задані? docker compose logs build |
+| `agent_online: false`, в логах агента `controller dial failed` | `--controller-url` (hostname/IP має бути в SAN сертифіката); що панель на Control запущена |
+| `rejected connection uid=…` в логах executor | uid користувача `osagent` має бути **10001** (`id -u osagent`) |
+| WoL не будить | `WOL_MAC` у build; WoL увімкнений у BIOS Target; вихідний UDP 9 з Control |
+| Керування контейнерами не працює | контейнери мають існувати на Target; `systemctl status osagent-docker-proxy`; ім'я в `--containers` |
+| GPU-телеметрія порожня | `amd-smi` встановлений на Target? (`sudo amd-smi monitor`) |
 
 ## Порти
 
@@ -305,5 +190,11 @@ networks:
 ## Безпека
 
 mTLS, жодного shell, точний sudo-allowlist, SO_PEERCRED-перевірка,
-non-root read-only контейнери, docker-socket-proxy, аудит-лог —
-деталі у розділі 4 спеки.
+hardened systemd-сервіси, docker-proxy з allowlist, аудит-лог, MANIFEST
+цілісності bundle — деталі у розділі 4 спеки.
+
+## Розробка
+
+- Production-демони: `daemons/` (Python, stdlib). Перевірка:
+  `python3 -m py_compile daemons/*.py`.
+- Reference-реалізація (Go): `go build ./...`; `go test ./...`; `go vet ./...`.

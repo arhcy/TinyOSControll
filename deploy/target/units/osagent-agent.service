@@ -1,0 +1,22 @@
+[Unit]
+Description=OSControl agent (outbound mTLS WebSocket to controller)
+After=network-online.target osagent-executor.service osagent-docker-proxy.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=osagent
+Group=osagent
+ExecStart=/usr/bin/python3 -B /opt/osagent/daemons/osagent_agent.py --config /etc/osagent/agent.json
+Restart=on-failure
+RestartSec=2
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ProtectKernelTunables=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+
+[Install]
+WantedBy=multi-user.target

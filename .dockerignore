@@ -1,5 +1,8 @@
+.git
 .tools
 dist
 go.zip
 *.zip
-.git
+__pycache__
+*.pyc
+docs

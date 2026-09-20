@@ -75,3 +75,19 @@ docs/                                       # SPEC.md, PLAN.md
   type-assertions до *net.UDPConn / *net.UnixConn у internal/wol/broadcast_linux.go
   та internal/executor/server.go.
 - Інтеграційні тести (3.2/3.3) потребують двох Ubuntu-серверів — не виконано.
+
+## 5. Ріворк 2026-09-20: контейнерний білд + Python-демони в розгортанні
+
+| # | Зміст | Статус |
+|---|---|---|
+| 10 | Build-стадія в контейнері (deploy/build/): ключі (openssl) + пакування/перевірка Python-демона + конфіги + install.sh → docker volume osagent-build | ✅ |
+| 11 | Контролер — контейнер python:3.12-slim, читає все з volume (ro) | ✅ |
+| 12 | Таргет — 3 systemd-демони (Python, stdlib): agent, executor, docker-proxy; встановлення — install.sh з bundle (MANIFEST-перевірка) | ✅ |
+| 13 | Прибрано Go-збірки з інсталяції (go build на хості більше не потрібен); Go-код — reference | ✅ |
+| 14 | SPEC.md + README.md переписані під нову інсталяцію | ✅ |
+| 15 | Інтеграційна перевірка на двох Ubuntu-серверах (Docker недоступний у dev-середовищі) | ⏳ |
+
+Журнал: 2026-09-20 — py_compile daemons/ — чисто; bash -n build.sh/install.sh —
+чисто (якщо bash доступний); симуляція генерації конфігів — OK.
+
+Журнал: 2026-09-20 (оновлено) — виправлено пошкоджені \n-ескейпи у daemons/*.py (6 місць); py_compile daemons/ — чисто; симуляція генерації конфігів — OK.
