@@ -155,10 +155,13 @@ class Agent:
         rid = req["id"]
         action = req["action"]
         params = req.get("payload") or {}
+        log.info("request %s: %s %s", rid, action, params)
         try:
             result = await self._execute(action, params)
             resp = P.make_response(rid, True, result)
+            log.info("request %s: ok", rid)
         except Exception as exc:  # noqa: BLE001
+            log.warning("request %s (%s) failed: %s", rid, action, exc)
             resp = P.make_response(rid, False, error=str(exc))
         await self._send(ws, resp)
 
@@ -195,7 +198,9 @@ class Agent:
         )
         out, err = await proc.communicate()
         if proc.returncode != 0:
-            raise RuntimeError(f"hostcmd {cmd!r} failed: {err.decode().strip()}")
+            err_text = err.decode().strip()
+            log.warning("hostcmd %r rc=%s stderr: %s", cmd, proc.returncode, err_text)
+            raise RuntimeError(f"hostcmd {cmd!r} failed: {err_text}")
         text = out.decode().strip()
         try:
             return json.loads(text)
@@ -219,6 +224,9 @@ async def _amain() -> None:
     logging.basicConfig(level=logging.INFO,
                         format="%(asctime)s %(levelname)s %(name)s: %(message)s")
     cfg = load_config()
+    log.info("config: name=%s main=%s:%s containers=%s hostcmd=%s interval=%ss",
+             cfg.name, cfg.main_host, cfg.main_port, cfg.containers,
+             cfg.hostcmd, cfg.interval)
     agent = Agent(cfg)
     loop = asyncio.get_running_loop()
     for sig in (signal.SIGINT, signal.SIGTERM):

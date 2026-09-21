@@ -26,13 +26,27 @@ case "$cmd" in
     ;;
 
   poweroff)
-    log "poweroff"
-    systemctl poweroff
+    log "poweroff: systemctl poweroff"
+    if out="$(systemctl poweroff 2>&1)"; then
+      log "poweroff: ok"
+    else
+      rc=$?
+      log "poweroff: FAILED rc=$rc: $out"
+      echo "systemctl poweroff failed (rc=$rc): $out" >&2
+      exit "$rc"
+    fi
     ;;
 
   reboot)
-    log "reboot"
-    systemctl reboot
+    log "reboot: systemctl reboot"
+    if out="$(systemctl reboot 2>&1)"; then
+      log "reboot: ok"
+    else
+      rc=$?
+      log "reboot: FAILED rc=$rc: $out"
+      echo "systemctl reboot failed (rc=$rc): $out" >&2
+      exit "$rc"
+    fi
     ;;
 
   containers.list)

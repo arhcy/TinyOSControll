@@ -68,6 +68,12 @@ The host must run systemd: the compose mounts `/run/systemd/private` and the
 `/run/systemd/system` marker so `systemctl` inside the container drives host
 PID 1 directly (poweroff / reboot).
 
+**Troubleshooting poweroff/reboot:** `docker logs tinyos-agent` shows the
+startup diagnostics (env vars, `/run/systemd` contents, a `systemctl`
+self-test) and every request with its result; `./logs/hostcmd.log` on the
+host contains the exact `systemctl` exit code and output. After changing
+anything under `agent/`, rebuild: `docker compose up -d --build`.
+
 You can also simply clone the repository onto both machines and run
 `docker compose up -d` from `<repo>/deploy/main` (or `<repo>/deploy/agent`) —
 the default `BUILD_CONTEXT=../..` then resolves to the repository root.
