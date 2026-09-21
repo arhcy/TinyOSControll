@@ -1,2 +1,0 @@
-# OSControl: minimal sudo allowlist for the osagent user (exact commands only).
-osagent ALL=(root) NOPASSWD: /usr/bin/systemctl poweroff, /usr/bin/amd-smi monitor

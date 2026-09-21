@@ -1,0 +1,2 @@
+{"ts": "2026-09-21T17:22:34Z", "event": "agent_online", "agent": "agent-1"}
+{"ts": "2026-09-21T17:23:24Z", "event": "container.start", "agent": "agent-1", "ok": true, "error": null}

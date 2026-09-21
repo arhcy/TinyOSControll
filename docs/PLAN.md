@@ -1,93 +1,75 @@
-# OS Control — план виконання та тестування
+# TinyOSControll — план виконання та тестування
 
 ## 1. План реалізації
 
 | # | Етап | Зміст | Статус |
 |---|---|---|---|
-| 1 | Спільний фундамент | `go.mod`, `internal/protocol` (типи повідомлень), `internal/config` (YAML + валідація), `internal/tlsutil` (mTLS) | ✅ |
-| 2 | WoL | `internal/wol`: парсинг MAC, магічний пакет, broadcast/directed відправка | ✅ |
-| 3 | Executor | `internal/executor`: JSON-lines протокол, unix-сокет, перевірка `SO_PEERCRED`, таблиця команд (`sysinfo`, `amdsmi`, `poweroff`), парсери sysfs/proc | ✅ |
-| 4 | Docker-клієнт | `internal/dockerapi`: мінімальний HTTP-клієнт Docker API (unix/tcp), list + start/stop/restart | ✅ |
-| 5 | Агент | `internal/agent`: mTLS WS-клієнт з reconnect/backoff, обробники дій, цикл телеметрії, білий список контейнерів, парсинг amd-smi | ✅ |
-| 6 | Контролер | `internal/controller`: WS-сервер (mTLS), agent-client (request/response, online-статус), SSE-hub, store телеметрії, веб-API, rate-limit, аудит, WoL | ✅ |
-| 7 | Веб-панель | `web/`: index.html + app.js + style.css (embed), live-оновлення через SSE, підтвердження небезпечних дій | ✅ |
-| 8 | Розгортання | Dockerfile (agent, controller), docker-compose (control/target), systemd-юніт executor, sudoers, скрипти gen-certs / install | ✅ |
-| 9 | Верифікація | `go vet`, `go test`, cross-compile linux (amd64/arm64), gofmt | ✅ |
+| 1 | Спільний фундамент | `common/protocol.py` (типи повідомлень, encode/decode), `common/tlsutil.py` (mTLS-контексти), `common/wol.py` (магічний пакет) | ✅ |
+| 2 | Agent | `agent/agent.py` (mTLS-WS-клієнт, обробники дій, цикл телеметрії), `agent/hostcmd.sh` (bash-диспетчер команд), `agent/entrypoint.sh`, `agent/Dockerfile` | ✅ |
+| 3 | Main | `main/main.py` (mTLS-WS-сервер, реєстр агентів, request/response, store телеметрії, веб-API + SSE, аудит, WoL), `main/web/`, `main/Dockerfile` | ✅ |
+| 4 | Розгортання | `deploy/main/docker-compose.yml` + `.env.example`, `deploy/agent/docker-compose.yml` + `.env.example`, `tools/gen-certs.sh` | ✅ |
+| 5 | Верифікація | `bash -n` для всіх `.sh`; `python -m py_compile` для всіх `.py`; модульні тести (venv); локальна інтеграція main+agent | ✅ |
+
+> Встановлення та тестування на реальних серверах **не входить** до плану
+> розробки (за вимогою). Локальне тестування — у python-venv.
 
 ## 2. Структура репозиторію
 
 ```
-cmd/osagent-{controller,agent,executor}/   # бинарі
-internal/{protocol,config,tlsutil,wol,executor,dockerapi,telemetry,controller,agent}/
-web/                                        # SPA (embed)
-deploy/                                     # Dockerfile, compose, systemd, sudoers, scripts
-docs/                                       # SPEC.md, PLAN.md
+common/                       # спільний Python-код (protocol, tls, wol)
+  protocol.py  tlsutil.py  wol.py
+agent/                        # контейнер agent
+  agent.py  hostcmd.sh  entrypoint.sh  Dockerfile
+main/                         # контейнер main
+  main.py  web/{index.html,app.js,style.css}  Dockerfile
+deploy/
+  main/{docker-compose.yml,.env.example}
+  agent/{docker-compose.yml,.env.example}
+tools/gen-certs.sh            # генерація self-signed сертифіката
+tests/                        # модульні + локальна інтеграція
+docs/{SPEC.md,PLAN.md}
 ```
 
 ## 3. План тестування
 
-### 3.1. Модульні (автоматичні, `go test ./...`)
+### 3.1. Модульні (автоматичні, python venv, `python -m pytest` або `unittest`)
 
 | Модуль | Що перевіряється |
 |---|---|
-| `wol` | довжина/структура магічного пакета (6×FF + 16×MAC), валідні/невалідні MAC |
-| `protocol` | marshal/unmarshal повідомлень, payload-типи |
-| `config` | валідація: MAC, URL (wss://), інтервали, порожні поля, відсутній файл |
-| `executor` | парсинг meminfo/thermal/loadavg/uptime (з temp-каталогу), дозволи команд, відмова невідомій команді; `SO_PEERCRED`-перевірка (лише linux) |
-| `dockerapi` | list/action проти мок-сервера на unix-сокеті; 304/409 → ок; 404 → помилка |
-| `agent` | фільтрація контейнерів за білим списком, парсинг amd-smi (наприсутність/відсутність полів) |
-| `controller` | rate-limiter, авторизація (токен, константний час), SSE-hub (публікація/підписка) |
+| `protocol` | encode/decode всіх типів повідомлень; валідація; помилки на некоректному JSON |
+| `wol` | структура магічного пакета (6×FF + 16×MAC); валідні/невалідні MAC |
+| `tlsutil` | побудова server/client-контекстів; відсутність файлів → помилка |
+| `agent` (hostcmd) | фільтрація контейнерів за білим списком; відмова невідомій дії; парсинг meminfo/thermal |
+| `main` | rate-limiter; авторизація (токен, константний час); реєстр агентів (online/offline); store телеметрії |
 
-### 3.2. Інтеграційні (на Ubuntu + Docker, вручну/скриптом)
+### 3.2. Локальна інтеграція (venv, без реальних серверів)
 
-1. `gen-certs.sh` → сертифікати; `install-controller.sh` / `install-target.sh`.
-2. `docker compose ps` на обох хостах — усі контейнери up.
-3. `journalctl -u osagent-executor` — сокет створено.
-4. Веб-панель: https://<controller>:8443 — токен, статус агента «онлайн».
-5. Телеметрія: температури CPU/RAM/GPU оновлюються кожну секунду; блок amd-smi
-   збігається з виводом `sudo amd-smi monitor` на таргеті.
-6. Контейнери: список = білий список; start/stop/restart працює,
-   `docker ps` на таргеті підтверджує зміну стану.
-7. Shutdown: кнопка з підтвердженням → таргет вимикається, панель показує офлайн.
-8. WoL: після вимкнення — WoL → машина завантажується, агент повертається онлайн.
-9. Негативні: з'єднання без клієнтського сертифіката відхиляється;
-   запит до контейнера поза білим списком → помилка; хтось із іншого uid
-   не може підключитись до executor-сокету.
-10. Аудит: у логах контролера — усі дії з IP та результатом.
+1. `tools/gen-certs.sh ./certs localhost` — сертифікат.
+2. Запустити `main` (локально, на 127.0.0.1) та `agent` (локально,
+   `AGENT_NAME=alpha`, `MAIN_HOST=127.0.0.1`).
+3. Agent підключається, `hello` приймається, статус «онлайн».
+4. Телеметрія надходить (RAM/SWAP/load; CPU/GPU — порожні на хості без
+   thermal zones / GPU — це очікувано).
+5. `health` → `ok`. `containers.list` → список (на хості без docker — помилка
+   очікувана, перевіряється формат відповіді).
+6. Негативні: з'єднання без клієнтського сертифіката відхиляється;
+   неправильний токен → `hello_err`; невідомий agent → `hello_err`.
+7. Аудит: у логах main — дії з agent та результатом.
 
-### 3.3. Приймальний чек-лист
+### 3.3. Приймальний чек-лист (локально)
 
-- [ ] Панель відкривається за HTTPS, токен працює, без токена — 401
-- [ ] Статус агента змінюється онлайн/офлайн при вимкненні/запуску
-- [ ] WoL прокидає вимкнену машину
-- [ ] Shutdown вимикає машину
-- [ ] Стани контейнерів актуальні; start/stop/restart працюють
-- [ ] Телеметрія (CPU, RAM, GPU) оновлюється в реальному часі
-- [ ] Таргет не має вхідних портів (`ss -tlnp` — лише локальні сокети)
-- [ ] sudoers містить лише дві команди; `sudo -l -U osagent` це підтверджує
+- [x] `bash -n` для всіх `.sh` — чисто
+- [x] `python -m py_compile` для всіх `.py` — чисто
+- [x] Модульні тести проходять
+- [x] Agent→main mTLS-з'єднання встановлюється локально
+- [x] `hello` з правильним токеном → `hello_ok`; неправильний → `hello_err`
+- [x] Телеметрія надходить кожну секунду
+- [x] Аудит-лог заповнюється
 
 ## 4. Журнал верифікації
 
-- 2026-09-19: go build, go vet, go test -count=1 — усі тести проходять; gofmt — чисто;
-  cross-compile linux/amd64 та linux/arm64 — успішно. Бинарі для розгортання у dist/ (linux/amd64).
-- Виправлено: API nhooyr.io/websocket v1.8.17 (Close, Accept) у internal/controller;
-  httptest.Server.Start у internal/dockerapi/client_test.go;
-  type-assertions до *net.UDPConn / *net.UnixConn у internal/wol/broadcast_linux.go
-  та internal/executor/server.go.
-- Інтеграційні тести (3.2/3.3) потребують двох Ubuntu-серверів — не виконано.
-
-## 5. Ріворк 2026-09-20: контейнерний білд + Python-демони в розгортанні
-
-| # | Зміст | Статус |
-|---|---|---|
-| 10 | Build-стадія в контейнері (deploy/build/): ключі (openssl) + пакування/перевірка Python-демона + конфіги + install.sh → docker volume osagent-build | ✅ |
-| 11 | Контролер — контейнер python:3.12-slim, читає все з volume (ro) | ✅ |
-| 12 | Таргет — 3 systemd-демони (Python, stdlib): agent, executor, docker-proxy; встановлення — install.sh з bundle (MANIFEST-перевірка) | ✅ |
-| 13 | Прибрано Go-збірки з інсталяції (go build на хості більше не потрібен); Go-код — reference | ✅ |
-| 14 | SPEC.md + README.md переписані під нову інсталяцію | ✅ |
-| 15 | Інтеграційна перевірка на двох Ubuntu-серверах (Docker недоступний у dev-середовищі) | ⏳ |
-
-Журнал: 2026-09-20 — py_compile daemons/ — чисто; bash -n build.sh/install.sh —
-чисто (якщо bash доступний); симуляція генерації конфігів — OK.
-
-Журнал: 2026-09-20 (оновлено) — виправлено пошкоджені \n-ескейпи у daemons/*.py (6 місць); py_compile daemons/ — чисто; симуляція генерації конфігів — OK.
+- 2026-09-21: `bash -n` для `tools/gen-certs.sh`, `agent/entrypoint.sh`, `agent/hostcmd.sh` — чисто.
+- 2026-09-21: `python -m py_compile` для всіх `.py` (common, agent, main, tests) — чисто.
+- 2026-09-21: `python -m pytest` — **20 passed** (19 модульних `common` + 1 локальна інтеграція main+agent).
+- 2026-09-21: локальна інтеграція (venv, `tests/test_integration.py`): mTLS-з'єднання agent→main; `hello`→`hello_ok` (неправильний токен → `hello_err`); телеметрія; `health`/`containers.list` через `forward`; web-API (list/containers/poweroff/wake) + SSE; whitelist-accept/reject; `/` → SPA; `/ws` недоступний на web-порту; відмова mTLS без клієнтського сертифіката. WoL-відправлення в тесті застубовано (offline-safe).
+- 2026-09-21: виправлено `agent/Dockerfile` — додано пакет `systemd` (постачає `systemctl` для `poweroff`/`reboot` через змонтований `/run/systemd/private`).

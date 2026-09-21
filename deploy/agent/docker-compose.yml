@@ -1,0 +1,25 @@
+services:
+  agent:
+    build:
+      context: ../..
+      dockerfile: agent/Dockerfile
+    image: tinyos/agent:latest
+    container_name: tinyos-agent
+    # host network so the agent reaches main at MAIN_HOST:MAIN_PORT.
+    network_mode: host
+    # host PID so /proc reflects the host and systemctl targets host PID 1.
+    pid: host
+    env_file: .env
+    environment:
+      CERT_DIR: /certs
+      HOSTCMD: /opt/tinyos/hostcmd.sh
+    volumes:
+      - ./certs:/certs:ro
+      # Host docker socket (Snap Docker: /var/snap/docker/current/docker.sock).
+      - ${DOCKER_SOCK}:/var/run/docker.sock
+      # Host systemd sockets so poweroff/reboot control the host, not the
+      # container. This is the agent's whole purpose (see docs/SPEC.md).
+      - /run/dbus/system_bus_socket:/run/dbus/system_bus_socket
+      - /run/systemd/private:/run/systemd/private
+      - ./logs:/var/log/tinyos
+    restart: unless-stopped

@@ -1,0 +1,19 @@
+services:
+  main:
+    build:
+      context: ../..
+      dockerfile: main/Dockerfile
+    image: tinyos/main:latest
+    container_name: tinyos-main
+    # host network so Wake-on-LAN broadcast reaches the local LAN.
+    network_mode: host
+    # All runtime config (ports, tokens, agent list) comes from .env.
+    env_file: .env
+    environment:
+      CERT_DIR: /certs
+      WEB_ROOT: /opt/tinyos/web
+      AUDIT_LOG: /var/log/tinyos/audit.jsonl
+    volumes:
+      - ./certs:/certs:ro
+      - ./audit:/var/log/tinyos
+    restart: unless-stopped
