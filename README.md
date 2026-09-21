@@ -39,9 +39,12 @@ Creates `certs/cert.key` + `certs/cert.crt`.
 # copy deploy/main/docker-compose.yml and .env.example into the working directory
 cp deploy/main/docker-compose.yml .
 cp deploy/main/.env.example .env
-# edit .env: WEB_TOKEN, AGENT_TOKEN, AGENTS, AGENT_MAC_*
+# edit .env: API_TOKEN, AGENT_TOKEN, AGENT_* and BUILD_CONTEXT —
+# the path to the repository root (the directory with main/, common/ and
+# requirements.txt); an absolute path is safest, e.g. /home/user/oscontroll
+# tokens can be any random string, e.g.: openssl rand -hex 32
 docker compose up -d
-# web panel: https://<main-host>:8443  (token — WEB_TOKEN)
+# web panel: https://<main-host>:8443  (token — API_TOKEN)
 ```
 
 ### 2. Agent (each server)
@@ -51,11 +54,14 @@ cp deploy/agent/docker-compose.yml .
 cp deploy/agent/.env.example .env
 # copy the certificates from main:
 mkdir -p certs && cp <main>/certs/cert.crt <main>/certs/cert.key certs/
-# edit .env: MAIN_HOST, AGENT_NAME, AGENT_TOKEN, MANAGED_CONTAINERS, DOCKER_SOCK
+# edit .env: MAIN_HOST, AGENT_NAME, AGENT_TOKEN, CONTAINERS, DOCKER_SOCK and
+# BUILD_CONTEXT (path to the repository root, see above)
 docker compose up -d
 ```
 
-The user can also simply clone the repository onto both machines.
+You can also simply clone the repository onto both machines and run
+`docker compose up -d` from `<repo>/deploy/main` (or `<repo>/deploy/agent`) —
+the default `BUILD_CONTEXT=../..` then resolves to the repository root.
 
 ### Snap Docker
 

@@ -1,7 +1,9 @@
 services:
   agent:
     build:
-      context: ../..
+      # BUILD_CONTEXT comes from .env (see .env.example): path to the repo
+      # root. Default ../.. works only when running from <repo>/deploy/agent.
+      context: ${BUILD_CONTEXT:-../..}
       dockerfile: agent/Dockerfile
     image: tinyos/agent:latest
     container_name: tinyos-agent

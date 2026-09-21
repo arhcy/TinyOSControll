@@ -1,7 +1,9 @@
 services:
   main:
     build:
-      context: ../..
+      # BUILD_CONTEXT comes from .env (see .env.example): path to the repo
+      # root. Default ../.. works only when running from <repo>/deploy/main.
+      context: ${BUILD_CONTEXT:-../..}
       dockerfile: main/Dockerfile
     image: tinyos/main:latest
     container_name: tinyos-main

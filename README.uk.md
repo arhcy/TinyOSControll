@@ -38,9 +38,12 @@ tools/gen-certs.sh ./certs 192.168.1.20
 # скопіюйте deploy/main/docker-compose.yml та .env.example в робочий каталог
 cp deploy/main/docker-compose.yml .
 cp deploy/main/.env.example .env
-# редагуйте .env: WEB_TOKEN, AGENT_TOKEN, AGENTS, AGENT_MAC_*
+# редагуйте .env: API_TOKEN, AGENT_TOKEN, AGENT_* та BUILD_CONTEXT —
+# шлях до кореня репозиторію (каталог, де лежать main/, common/ та
+# requirements.txt); найбезпечніше — абсолютний, наприклад /home/user/oscontroll
+# токени — довільні випадкові рядки, наприклад: openssl rand -hex 32
 docker compose up -d
-# веб-панель: https://<main-host>:8443  (токен — WEB_TOKEN)
+# веб-панель: https://<main-host>:8443  (токен — API_TOKEN)
 ```
 
 ### 2. Agent (кожен сервер)
@@ -50,11 +53,14 @@ cp deploy/agent/docker-compose.yml .
 cp deploy/agent/.env.example .env
 # скопіюйте сертифікати з main:
 mkdir -p certs && cp <main>/certs/cert.crt <main>/certs/cert.key certs/
-# редагуйте .env: MAIN_HOST, AGENT_NAME, AGENT_TOKEN, MANAGED_CONTAINERS, DOCKER_SOCK
+# редагуйте .env: MAIN_HOST, AGENT_NAME, AGENT_TOKEN, CONTAINERS, DOCKER_SOCK
+# та BUILD_CONTEXT (шлях до кореня репозиторію, див. вище)
 docker compose up -d
 ```
 
-Користувач може також просто клонувати репозиторій на обидві машини.
+Можна також просто клонувати репозиторій на обидві машини та запускати
+`docker compose up -d` з `<repo>/deploy/main` (або `<repo>/deploy/agent`) —
+тоді за замовчуванням `BUILD_CONTEXT=../..` вкаже на корінь репозиторію.
 
 ### Snap Docker
 
