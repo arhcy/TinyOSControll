@@ -15,13 +15,19 @@ services:
     environment:
       CERT_DIR: /certs
       HOSTCMD: /opt/tinyos/hostcmd.sh
+      # Route systemctl straight to host PID 1 over the private socket.
+      # The container is not "booted with systemd", and the host D-Bus bus
+      # would require polkit authentication (a container process is denied).
+      DBUS_SYSTEM_BUS_ADDRESS: unix:path=/run/systemd/private
     volumes:
       - ./certs:/certs:ro
       # Host docker socket (Snap Docker: /var/snap/docker/current/docker.sock).
       - ${DOCKER_SOCK}:/var/run/docker.sock
       # Host systemd sockets so poweroff/reboot control the host, not the
       # container. This is the agent's whole purpose (see docs/SPEC.md).
-      - /run/dbus/system_bus_socket:/run/dbus/system_bus_socket
       - /run/systemd/private:/run/systemd/private
+      # Marker directory required by systemctl's sd_booted() check; without
+      # it systemctl refuses to run inside the container.
+      - /run/systemd/system:/run/systemd/system:ro
       - ./logs:/var/log/tinyos
     restart: unless-stopped

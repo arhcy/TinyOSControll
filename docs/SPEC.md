@@ -88,9 +88,9 @@
 4. **Жодного shell-довільності**: `hostcmd.sh` — фіксований `case`-диспетчер
    (без `sh -c` від вводу користувача, без wildcard-аргументів); agent викликає
    його через `subprocess` без `shell=True`.
-5. **Ізоляція agent**: контейнер з обмеженими можливостями,
-   `no-new-privileges`, read-only rootfs, лише необхідні монти
-   (docker-сокет, systemd private-сокет, GPU-пристрої).
+5. **Ізоляція agent**: лише необхідні монти (docker-сокет, systemd
+   private-сокет + маркер `/run/systemd/system`, GPU-пристрої); `systemctl`
+   ходить до PID 1 хоста напряму через private-сокет (без D-Bus/polkit).
 6. **Docker**: agent керує лише контейнерами зі свого білого списку
    (`hostcmd.sh` відхиляє іншу назву).
 7. **Agent без вхідних портів**: лише вихідне з'єднання з main; main —
@@ -179,6 +179,9 @@ tools/gen-certs.sh ./certs <MAIN_HOST>
 3. Редагує `.env` (`MAIN_HOST`, `AGENT_NAME`, `AGENT_TOKEN`,
    `MANAGED_CONTAINERS`, `DOCKER_SOCK`).
 4. `docker compose up -d`.
+
+   Вимога: на хості працює systemd (compose монтує `/run/systemd/private`
+   та маркер `/run/systemd/system`).
 
 ### 6.4. Snap Docker
 

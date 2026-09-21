@@ -59,6 +59,15 @@ mkdir -p certs && cp <main>/certs/cert.crt <main>/certs/cert.key certs/
 docker compose up -d
 ```
 
+Note: `hostcmd.sh` (the fixed dispatcher for host commands) is copied into the
+image at build time (`agent/Dockerfile` → `/opt/tinyos/hostcmd.sh`). Nothing
+has to be installed on the host — `HOSTCMD` in `docker-compose.yml` is a path
+inside the container.
+
+The host must run systemd: the compose mounts `/run/systemd/private` and the
+`/run/systemd/system` marker so `systemctl` inside the container drives host
+PID 1 directly (poweroff / reboot).
+
 You can also simply clone the repository onto both machines and run
 `docker compose up -d` from `<repo>/deploy/main` (or `<repo>/deploy/agent`) —
 the default `BUILD_CONTEXT=../..` then resolves to the repository root.

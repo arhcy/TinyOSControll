@@ -58,6 +58,15 @@ mkdir -p certs && cp <main>/certs/cert.crt <main>/certs/cert.key certs/
 docker compose up -d
 ```
 
+Примітка: `hostcmd.sh` (фіксований диспетчер команд хоста) копіюється в образ
+при збірці (`agent/Dockerfile` → `/opt/tinyos/hostcmd.sh`). На хості нічого
+встановлювати не треба — `HOSTCMD` у `docker-compose.yml` — це шлях
+всередині контейнера.
+
+На хості має працювати systemd: compose монтує `/run/systemd/private` та
+маркер `/run/systemd/system`, щоб `systemctl` у контейнері керував PID 1
+хоста напряму (poweroff / reboot).
+
 Можна також просто клонувати репозиторій на обидві машини та запускати
 `docker compose up -d` з `<repo>/deploy/main` (або `<repo>/deploy/agent`) —
 тоді за замовчуванням `BUILD_CONTEXT=../..` вкаже на корінь репозиторію.
