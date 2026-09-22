@@ -10,6 +10,8 @@ telemetry (CPU / RAM / SWAP / GPU).
 All code is **Python** and **bash**. No SSH, no arbitrary command execution.
 Details in [`docs/SPEC.md`](docs/SPEC.md) and [`docs/PLAN.md`](docs/PLAN.md).
 
+![Web panel](docs/images/dashboard.png)
+
 ## Architecture
 
 - **main** — container: web interface (HTTPS) + mTLS-WS server that talks to
@@ -142,5 +144,5 @@ main/      # main.py, web/, Dockerfile
 deploy/    # docker-compose.yml + .env.example for main and agent
 tools/     # gen-certs.sh
 tests/     # unit + local integration
-docs/      # SPEC.md, PLAN.md
+docs/      # SPEC.md, PLAN.md, images/
 ```

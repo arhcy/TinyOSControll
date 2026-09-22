@@ -10,6 +10,8 @@
 Весь код — **Python** та **bash**. Без SSH, без виконання довільних команд.
 Деталі — у [`docs/SPEC.md`](docs/SPEC.md) та [`docs/PLAN.md`](docs/PLAN.md).
 
+![Веб-панель](docs/images/dashboard.png)
+
 ## Архітектура
 
 - **main** — контейнер: веб-інтерфейс (HTTPS) + mTLS-WS-сервер, що спілкується
@@ -142,5 +144,5 @@ main/      # main.py, web/, Dockerfile
 deploy/    # docker-compose.yml + .env.example для main і agent
 tools/     # gen-certs.sh
 tests/     # модульні + локальна інтеграція
-docs/      # SPEC.md, PLAN.md
+docs/      # SPEC.md, PLAN.md, images/
 ```
