@@ -19,12 +19,19 @@ services:
       # The container is not "booted with systemd", and the host D-Bus bus
       # would require polkit authentication (a container process is denied).
       DBUS_SYSTEM_BUS_ADDRESS: unix:path=/run/systemd/private
+    # Needed by the reboot(2) poweroff/reboot fallback in hostcmd.sh (used
+    # when the /run/systemd/private socket is not the host's live socket,
+    # e.g. under Snap Docker).
+    cap_add:
+      - SYS_BOOT
     volumes:
       - ./certs:/certs:ro
       # Host docker socket (Snap Docker: /var/snap/docker/current/docker.sock).
       - ${DOCKER_SOCK}:/var/run/docker.sock
       # Host systemd sockets so poweroff/reboot control the host, not the
       # container. This is the agent's whole purpose (see docs/SPEC.md).
+      # Under Snap Docker this bind mount may not be the host's live socket;
+      # hostcmd.sh then falls back to the reboot(2) syscall (CAP_SYS_BOOT).
       - /run/systemd/private:/run/systemd/private
       # Marker directory required by systemctl's sd_booted() check; without
       # it systemctl refuses to run inside the container.

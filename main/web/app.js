@@ -173,7 +173,13 @@ function connectSSE() {
       refresh();
     } else if (data.event === "status" || data.event === "action") {
       refresh();
-      if (d.agent) refreshContainers(d.agent);
+      // Skip the containers refresh when the agent is (or just became)
+      // offline: the request would 503 in main and only log console noise.
+      // After "wake" the agent is offline by definition; it will be
+      // refreshed again when the "status" online event arrives.
+      if (d.agent && d.online !== false && d.action !== "wake") {
+        refreshContainers(d.agent);
+      }
     }
   };
   sse.onerror = () => { connEl.textContent = "reconnecting…"; };

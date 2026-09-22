@@ -19,6 +19,28 @@ shift || true
 
 is_container_name() { [[ "${1:-}" =~ ^[A-Za-z0-9][A-Za-z0-9_.-]*$ ]]; }
 
+# Fallback for poweroff/reboot when systemctl cannot reach host systemd
+# (notably Snap Docker, where the /run/systemd/private bind mount is not the
+# host's live socket and connect() returns EHOSTDOWN). Asks the kernel
+# directly via the reboot(2) syscall; requires CAP_SYS_BOOT (see
+# deploy/agent/docker-compose.yml). Note: this is a hard power-off/reboot and
+# does not run systemd's clean service shutdown.
+# $1 = hex command: 0x4321fedc (RB_POWER_OFF) or 0x01234567 (RB_AUTOBOOT)
+_reboot_syscall() {
+  python3 - "$1" <<'PY'
+import ctypes, sys
+try:
+    libc = ctypes.CDLL("libc.so.6", use_errno=True)
+except OSError:
+    libc = ctypes.CDLL(None, use_errno=True)
+libc.reboot.restype = ctypes.c_int
+rc = libc.reboot(int(sys.argv[1], 16))
+if rc != 0:
+    sys.stderr.write("reboot(2) failed: errno=%d\n" % ctypes.get_errno())
+    sys.exit(1)
+PY
+}
+
 case "$cmd" in
   health)
     uptime_s="$(cut -d' ' -f1 /proc/uptime 2>/dev/null || echo 0)"
@@ -26,26 +48,38 @@ case "$cmd" in
     ;;
 
   poweroff)
-    log "poweroff: systemctl poweroff"
+    log "poweroff: trying systemctl poweroff"
     if out="$(systemctl poweroff 2>&1)"; then
-      log "poweroff: ok"
+      log "poweroff: ok (systemctl)"
     else
       rc=$?
-      log "poweroff: FAILED rc=$rc: $out"
-      echo "systemctl poweroff failed (rc=$rc): $out" >&2
-      exit "$rc"
+      log "poweroff: systemctl FAILED rc=$rc: $out — trying reboot(2)"
+      if out2="$(_reboot_syscall 0x4321fedc 2>&1)"; then
+        log "poweroff: ok (reboot(2))"
+      else
+        rc2=$?
+        log "poweroff: reboot(2) FAILED rc=$rc2: $out2"
+        echo "poweroff failed: systemctl rc=$rc; reboot(2) rc=$rc2: $out2" >&2
+        exit "$rc2"
+      fi
     fi
     ;;
 
   reboot)
-    log "reboot: systemctl reboot"
+    log "reboot: trying systemctl reboot"
     if out="$(systemctl reboot 2>&1)"; then
-      log "reboot: ok"
+      log "reboot: ok (systemctl)"
     else
       rc=$?
-      log "reboot: FAILED rc=$rc: $out"
-      echo "systemctl reboot failed (rc=$rc): $out" >&2
-      exit "$rc"
+      log "reboot: systemctl FAILED rc=$rc: $out — trying reboot(2)"
+      if out2="$(_reboot_syscall 0x01234567 2>&1)"; then
+        log "reboot: ok (reboot(2))"
+      else
+        rc2=$?
+        log "reboot: reboot(2) FAILED rc=$rc2: $out2"
+        echo "reboot failed: systemctl rc=$rc; reboot(2) rc=$rc2: $out2" >&2
+        exit "$rc2"
+      fi
     fi
     ;;
 

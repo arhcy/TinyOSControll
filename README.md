@@ -66,13 +66,18 @@ inside the container.
 
 The host must run systemd: the compose mounts `/run/systemd/private` and the
 `/run/systemd/system` marker so `systemctl` inside the container drives host
-PID 1 directly (poweroff / reboot).
+PID 1 directly (poweroff / reboot). If `systemctl` cannot reach the host
+systemd (e.g. under Snap Docker, where the `/run/systemd/private` bind mount
+is not the host's live socket), `hostcmd.sh` falls back to the `reboot(2)`
+syscall, which needs `CAP_SYS_BOOT` (already added in the compose).
 
 **Troubleshooting poweroff/reboot:** `docker logs tinyos-agent` shows the
 startup diagnostics (env vars, `/run/systemd` contents, a `systemctl`
-self-test) and every request with its result; `./logs/hostcmd.log` on the
-host contains the exact `systemctl` exit code and output. After changing
-anything under `agent/`, rebuild: `docker compose up -d --build`.
+self-test, and whether `CAP_SYS_BOOT` is present) and every request with its
+result; `./logs/hostcmd.log` on the host contains the exact exit code and
+output of both the `systemctl` attempt and the `reboot(2)` fallback. A
+`reboot(2) failed: errno=1` (EPERM) means `CAP_SYS_BOOT` is missing. After
+changing anything under `agent/`, rebuild: `docker compose up -d --build`.
 
 You can also simply clone the repository onto both machines and run
 `docker compose up -d` from `<repo>/deploy/main` (or `<repo>/deploy/agent`) —
@@ -85,6 +90,10 @@ Snap Docker isolates the network and changes the socket path:
 - In the agent `.env`: `DOCKER_SOCK=/var/snap/docker/current/docker.sock`.
 - For WoL: `NETWORK_MODE=host` (Snap Docker supports the host network). If the
   broadcast does not reach the LAN, check the snap network settings.
+- Poweroff/reboot: the `/run/systemd/private` bind mount is not the host's
+  live socket under Snap Docker, so `systemctl` fails and `hostcmd.sh` uses
+  the `reboot(2)` fallback (`CAP_SYS_BOOT`, already in the compose). This is a
+  hard power-off/reboot (no systemd service shutdown).
 
 ## Features
 

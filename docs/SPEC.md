@@ -60,8 +60,11 @@
 1. **Wake-on-LAN** — магічний пакет (6×FF + 16×MAC) UDP-broadcast на порт 9
    (опційно — на заданий IP). Надсилає **main**. MAC береться зі списку агентів
    в `.env` main.
-2. **Вимкнення сервера** — `hostcmd.sh poweroff` → `systemctl poweroff`.
-3. **Ребут сервера** — `hostcmd.sh reboot` → `systemctl reboot`.
+2. **Вимкнення сервера** — `hostcmd.sh poweroff` → `systemctl poweroff`;
+   якщо systemctl не може дістатися до systemd хоста (напр., Snap Docker),
+   fallback — системний виклик `reboot(2)` RB_POWER_OFF (потрібен CAP_SYS_BOOT).
+3. **Ребут сервера** — `hostcmd.sh reboot` → `systemctl reboot`; fallback —
+   `reboot(2)` RB_AUTOBOOT (CAP_SYS_BOOT).
 4. **Контейнери** — статичний білий список у `.env` agent
    (`MANAGED_CONTAINERS`). Дії: стан (список), start / stop / restart.
    `hostcmd.sh` перевіряє назву контейнера за білим списком перед викликом.
@@ -89,8 +92,10 @@
    (без `sh -c` від вводу користувача, без wildcard-аргументів); agent викликає
    його через `subprocess` без `shell=True`.
 5. **Ізоляція agent**: лише необхідні монти (docker-сокет, systemd
-   private-сокет + маркер `/run/systemd/system`, GPU-пристрої); `systemctl`
-   ходить до PID 1 хоста напряму через private-сокет (без D-Bus/polkit).
+   private-сокет + маркер `/run/systemd/system`, GPU-пристрої) та лише
+   `CAP_SYS_BOOT` (для fallback `reboot(2)`); `systemctl` ходить до PID 1
+   хоста напряму через private-сокет (без D-Bus/polkit), а якщо сокет не є
+   живим (напр., Snap Docker) — `reboot(2)` питає ядро напряму.
 6. **Docker**: agent керує лише контейнерами зі свого білого списку
    (`hostcmd.sh` відхиляє іншу назву).
 7. **Agent без вхідних портів**: лише вихідне з'єднання з main; main —
