@@ -1,9 +1,20 @@
 # Optional override for AMD GPU hosts: makes GPU telemetry work.
 #
-# hostcmd.sh runs INSIDE the container, so the container needs both the
-# amd-smi binary and access to the GPU devices. This override:
-#   * mounts the host's amd-smi binary (a static Go binary, runs fine in the
-#     container) at /opt/tinyos/amd-smi,
+# hostcmd.sh runs INSIDE the container, so the container needs the amd-smi
+# toolchain and access to the GPU devices. amd-smi (the Debian/Ubuntu package)
+# is a Python CLI made of four parts, all of which must exist in the container:
+#
+#   * the CLI script             /usr/bin/amd-smi
+#   * the CLI Python modules     /usr/libexec/amdsmi_cli/   (amdsmi_init, ...)
+#   * the amdsmi Python package  /usr/share/amd_smi/        (amdsmi_wrapper, ...)
+#   * the C library              /usr/lib/x86_64-linux-gnu/libamd_smi.so
+#
+# This override:
+#   * mounts all four from the host (read-only),
+#   * sets PYTHONPATH so the CLI finds its modules and the amdsmi package
+#     (the CLI's own fallback would look in /opt/libexec/amdsmi_cli, which is
+#     wrong for the /opt/tinyos/amd-smi mount point, so PYTHONPATH is required),
+#   * sets LD_LIBRARY_PATH so the C library is found,
 #   * mounts /dev/kfd and /dev/dri so amd-smi can read GPU metrics.
 #
 # Use ONLY on hosts with an AMD GPU where amd-smi is installed
@@ -14,12 +25,18 @@
 # Do NOT use it on hosts without an AMD GPU: the container will fail to start
 # because /dev/kfd does not exist there.
 #
-# If amd-smi is not at /usr/bin/amd-smi on the host, set AMDSMI_HOST_PATH in
-# the agent .env (or edit the mount below).
+# If the host's amd-smi files are not at the default package paths, override
+# the AMDSMI_* variables in the agent .env.
 services:
   agent:
+    environment:
+      - PYTHONPATH=/usr/libexec/amdsmi_cli:/usr/share/amd_smi
+      - LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu
     devices:
       - /dev/kfd:/dev/kfd
       - /dev/dri:/dev/dri
     volumes:
       - ${AMDSMI_HOST_PATH:-/usr/bin/amd-smi}:/opt/tinyos/amd-smi:ro
+      - ${AMDSMI_CLI_DIR:-/usr/libexec/amdsmi_cli}:/usr/libexec/amdsmi_cli:ro
+      - ${AMDSMI_PKG_DIR:-/usr/share/amd_smi}:/usr/share/amd_smi:ro
+      - ${AMDSMI_LIB:-/usr/lib/x86_64-linux-gnu/libamd_smi.so}:/usr/lib/x86_64-linux-gnu/libamd_smi.so:ro
