@@ -95,6 +95,26 @@ Snap Docker ізолює мережу та змінює шлях сокета:
   fallback `reboot(2)` (`CAP_SYS_BOOT`, вже в compose). Це жорстке
   вимкнення/ребут (без зупинки сервісів systemd).
 
+### AMD GPU-телеметрія (опційно)
+
+`hostcmd.sh` працює всередині контейнера, тому для GPU-телеметрії контейнеру
+потрібні `amd-smi` та пристрої GPU. На хості з AMD GPU:
+
+1. Встановіть `amd-smi` на хості (напр., Ubuntu 24.04+: `sudo apt install amd-smi`).
+2. Запустіть агента з GPU-override:
+   ```
+   docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d
+   ```
+   Override монтує бінарник `amd-smi` з хоста та `/dev/kfd` + `/dev/dri`
+   в контейнер.
+3. **Не** використовуйте override на хостах без AMD GPU — контейнер не
+   запуститься, бо там немає `/dev/kfd`.
+
+`hostcmd.sh` шукає `amd-smi` через змінну `AMDSMI`, змонтований
+`/opt/tinyos/amd-smi` або PATH контейнера; `docker logs tinyos-agent`
+показує, який варіант знайдено при старті. Без `amd-smi` поле `amd_smi`
+просто порожнє (це не помилка).
+
 ## Функції
 
 - **Wake-on-LAN** по MAC (надсилає main).

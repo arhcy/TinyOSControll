@@ -18,5 +18,15 @@ if [ -n "$cap_eff" ] && [ $(( 0x"$cap_eff" & 0x80000 )) -ne 0 ]; then
 else
   echo "[$(ts)] entrypoint: CAP_SYS_BOOT MISSING (reboot(2) fallback will fail; add cap_add: SYS_BOOT)"
 fi
+# Report how amd-smi (GPU telemetry) is available, if at all.
+if [ -n "${AMDSMI:-}" ] && [ -x "$AMDSMI" ]; then
+  echo "[$(ts)] entrypoint: amd-smi: $AMDSMI (AMDSMI env var)"
+elif [ -x /opt/tinyos/amd-smi ]; then
+  echo "[$(ts)] entrypoint: amd-smi: /opt/tinyos/amd-smi (host binary mounted)"
+elif command -v amd-smi >/dev/null 2>&1; then
+  echo "[$(ts)] entrypoint: amd-smi: $(command -v amd-smi) (container PATH)"
+else
+  echo "[$(ts)] entrypoint: amd-smi: NOT FOUND (GPU telemetry off; use docker-compose.gpu.yml on AMD GPU hosts)"
+fi
 
 exec python3 /opt/tinyos/agent.py

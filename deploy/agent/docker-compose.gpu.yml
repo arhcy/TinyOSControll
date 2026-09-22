@@ -1,0 +1,25 @@
+# Optional override for AMD GPU hosts: makes GPU telemetry work.
+#
+# hostcmd.sh runs INSIDE the container, so the container needs both the
+# amd-smi binary and access to the GPU devices. This override:
+#   * mounts the host's amd-smi binary (a static Go binary, runs fine in the
+#     container) at /opt/tinyos/amd-smi,
+#   * mounts /dev/kfd and /dev/dri so amd-smi can read GPU metrics.
+#
+# Use ONLY on hosts with an AMD GPU where amd-smi is installed
+# (e.g. Ubuntu 24.04+: sudo apt install amd-smi):
+#
+#   docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d
+#
+# Do NOT use it on hosts without an AMD GPU: the container will fail to start
+# because /dev/kfd does not exist there.
+#
+# If amd-smi is not at /usr/bin/amd-smi on the host, set AMDSMI_HOST_PATH in
+# the agent .env (or edit the mount below).
+services:
+  agent:
+    devices:
+      - /dev/kfd:/dev/kfd
+      - /dev/dri:/dev/dri
+    volumes:
+      - ${AMDSMI_HOST_PATH:-/usr/bin/amd-smi}:/opt/tinyos/amd-smi:ro

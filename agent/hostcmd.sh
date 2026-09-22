@@ -113,7 +113,7 @@ PY
 
   telemetry)
     python3 - <<'PY'
-import glob, json, subprocess
+import glob, json, os, shutil, subprocess
 
 def read_meminfo():
     d = {}
@@ -153,13 +153,24 @@ for f in candidates:
     except Exception:
         continue
 
+def find_amd_smi():
+    # hostcmd runs inside the container, so amd-smi must be made available
+    # there: via the AMDSMI env var, the host binary mounted at
+    # /opt/tinyos/amd-smi (docker-compose.gpu.yml), or the container PATH.
+    for c in (os.environ.get("AMDSMI"), "/opt/tinyos/amd-smi"):
+        if c and os.path.isfile(c) and os.access(c, os.X_OK):
+            return c
+    return shutil.which("amd-smi")
+
 amd = None
-try:
-    r = subprocess.run(["amd-smi", "monitor"], capture_output=True, text=True, timeout=10)
-    if r.returncode == 0:
-        amd = r.stdout
-except Exception:
-    amd = None
+smi = find_amd_smi()
+if smi:
+    try:
+        r = subprocess.run([smi, "monitor"], capture_output=True, text=True, timeout=10)
+        if r.returncode == 0:
+            amd = r.stdout
+    except Exception:
+        amd = None
 
 print(json.dumps({
     "cpu_temp_c": cpu_temp,
