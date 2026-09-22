@@ -5,8 +5,12 @@ FROM python:3.12-slim
 # host's systemd over the mounted /run/systemd/private socket, see
 # deploy/agent/docker-compose.yml). amd-smi is AMD-specific and is provided at
 # deploy time (see docs/SPEC.md "Telemetry").
+#
+# On Debian trixie (the current python:3.12-slim base) the CLI is a separate
+# `docker-cli` package; `docker.io` only ships the daemon, which the agent
+# does not need.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        bash ca-certificates procps docker.io systemd \
+        bash ca-certificates procps docker-cli systemd \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /opt/tinyos

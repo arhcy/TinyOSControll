@@ -86,16 +86,20 @@ case "$cmd" in
   containers.list)
     # $1 = comma-separated whitelist of container names
     python3 - "${1:-}" <<'PY'
-import json, sys, subprocess
+import json, shutil, sys, subprocess
 names = [n for n in sys.argv[1].split(",") if n]
 out = {}
 for n in names:
-    try:
-        st = subprocess.run(["docker", "inspect", "-f", "{{.State.Status}}", n],
-                            capture_output=True, text=True, timeout=10)
-        state = st.stdout.strip() or "missing"
-    except Exception:
-        state = "missing"
+    if shutil.which("docker") is None:
+        # docker CLI absent (broken image): "unknown", not "missing"
+        state = "unknown"
+    else:
+        try:
+            st = subprocess.run(["docker", "inspect", "-f", "{{.State.Status}}", n],
+                                capture_output=True, text=True, timeout=10)
+            state = st.stdout.strip() or "missing"
+        except Exception:
+            state = "missing"
     out[n] = {"state": state}
 print(json.dumps(out))
 PY
