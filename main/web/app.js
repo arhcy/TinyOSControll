@@ -44,6 +44,66 @@ const esc = (s) =>
   }[c]));
 const pct = (v) => (v == null ? "—" : v + "%");
 const mb = (v) => (v == null ? "—" : v + " MB");
+const num = (s) => { const v = parseFloat(s); return Number.isFinite(v) ? v : null; };
+
+// Parse the fixed `amd-smi monitor` table into per-GPU objects. Returns null
+// when the layout is not recognized so the caller can fall back to raw text.
+function parseAmdSmi(text) {
+  const lines = String(text).trim().split(/\r?\n/).filter((l) => l.trim());
+  if (lines.length < 2) return null;
+  const expected = ["GPU", "XCP", "POWER", "GPU_T", "MEM_T", "GFX_CLK",
+                    "GFX%", "MEM%", "ENC%", "DEC%", "VRAM_USAGE"];
+  const header = lines[0].trim().split(/\s+/);
+  if (header.length !== expected.length ||
+      header.some((h, i) => h !== expected[i])) return null;
+  const gpus = [];
+  for (const line of lines.slice(1)) {
+    const t = line.trim().split(/\s+/);
+    if (t[3] !== "W" || t[5] !== "°C" || t[7] !== "°C" || t[9] !== "MHz" ||
+        t[11] !== "%" || t[13] !== "%") return null;
+    let enc, dec, vramUsed, vramTotal;
+    if (t[14] === "N/A") {
+      if (t.length !== 20 || t[16] !== "%" || t[19] !== "GB") return null;
+      enc = null; dec = num(t[15]);
+      vramUsed = num(t[17]); vramTotal = num(t[18]);
+    } else {
+      if (t.length !== 21 || t[15] !== "%" || t[17] !== "%" || t[20] !== "GB") return null;
+      enc = num(t[14]); dec = num(t[16]);
+      vramUsed = num(t[18]); vramTotal = num(t[19]);
+    }
+    gpus.push({
+      gpu: parseInt(t[0], 10), xcp: parseInt(t[1], 10),
+      power_w: num(t[2]), gpu_temp_c: num(t[4]), mem_temp_c: num(t[6]),
+      gfx_clk_mhz: num(t[8]), gfx_pct: num(t[10]), mem_pct: num(t[12]),
+      enc_pct: enc, dec_pct: dec,
+      vram_used_gb: vramUsed, vram_total_gb: vramTotal,
+    });
+  }
+  return gpus.length ? gpus : null;
+}
+
+const statBlock = (label, value) =>
+  `<div class="stat"><span class="stat-label">${esc(label)}</span>` +
+  `<span class="stat-val">${esc(value)}</span></div>`;
+
+function gpuBlock(g) {
+  const vram = (g.vram_used_gb == null || g.vram_total_gb == null)
+    ? "—" : `${g.vram_used_gb} / ${g.vram_total_gb} GB`;
+  const stats = [
+    statBlock("Power", g.power_w == null ? "—" : g.power_w + " W"),
+    statBlock("GPU Temp", g.gpu_temp_c == null ? "—" : g.gpu_temp_c + " °C"),
+    statBlock("Mem Temp", g.mem_temp_c == null ? "—" : g.mem_temp_c + " °C"),
+    statBlock("GFX Clock", g.gfx_clk_mhz == null ? "—" : g.gfx_clk_mhz + " MHz"),
+    statBlock("GFX", pct(g.gfx_pct)),
+    statBlock("Mem", pct(g.mem_pct)),
+    statBlock("Enc", g.enc_pct == null ? "N/A" : pct(g.enc_pct)),
+    statBlock("Dec", pct(g.dec_pct)),
+    statBlock("VRAM", vram),
+    statBlock("XCP", g.xcp == null ? "—" : String(g.xcp)),
+  ].join("");
+  return `<div class="gpu"><div class="gpu-head">GPU ${esc(g.gpu)}</div>` +
+         `<div class="gpu-stats">${stats}</div></div>`;
+}
 
 // --- rendering -----------------------------------------------------------
 function createCard(a) {
@@ -53,7 +113,7 @@ function createCard(a) {
     <div class="agent-head"><h2>${esc(a.name)}</h2><span class="badge"></span></div>
     <div class="meta">MAC ${esc(a.mac)}${a.ip ? " · " + esc(a.ip) : ""}</div>
     <div class="tele"></div>
-    <pre class="amd" hidden></pre>
+    <div class="amd" hidden></div>
     <div class="actions">
       <button data-act="wake">Wake</button>
       <button data-act="poweroff">Power off</button>
@@ -78,8 +138,20 @@ function updateCard(el, a) {
     `<div>RAM <b>${pct(ram.percent)}</b> <small>${mb(ram.used_mb)}/${mb(ram.total_mb)}</small></div>` +
     `<div>SWAP <b>${pct(sw.percent)}</b> <small>${mb(sw.used_mb)}/${mb(sw.total_mb)}</small></div>`;
   const amd = el.querySelector(".amd");
-  if (t.amd_smi) { amd.hidden = false; amd.textContent = t.amd_smi; }
-  else amd.hidden = true;
+  const parsed = Array.isArray(t.amd_smi) ? t.amd_smi
+                 : (typeof t.amd_smi === "string" ? parseAmdSmi(t.amd_smi) : null);
+  if (parsed) {
+    amd.hidden = false;
+    amd.className = "amd amd-blocks";
+    amd.innerHTML = parsed.map(gpuBlock).join("");
+  } else if (t.amd_smi) {
+    amd.hidden = false;
+    amd.className = "amd amd-raw";
+    amd.textContent = t.amd_smi;
+  } else {
+    amd.hidden = true;
+    amd.className = "amd";
+  }
 }
 
 async function refresh() {
