@@ -127,11 +127,10 @@ simply empty (not an error).
 
 ## Home Assistant
 
-A custom integration (`custom_components/oscontroll/`) plus a ready-made
-Lovelace dashboard bring agents, telemetry, GPU metrics and controls into
-Home Assistant.
+A custom integration (`custom_components/oscontroll/`) brings agents,
+telemetry, GPU metrics and controls into Home Assistant.
 
-Installation, configuration and dashboard setup:
+Installation and configuration:
 [docs/HOME_ASSISTANT.md](docs/HOME_ASSISTANT.md).
 
 ## Local testing (without real servers)
@@ -150,7 +149,7 @@ See `docs/PLAN.md` section 3.2 for the local integration scenario.
 common/    # protocol, tls, wol (shared code)
 agent/     # agent.py, hostcmd.sh, entrypoint.sh, Dockerfile
 main/      # main.py, web/, Dockerfile
-deploy/    # docker-compose.yml + .env.example for main, agent, HA dashboard
+deploy/    # docker-compose.yml + .env.example for main, agent
 tools/     # gen-certs.sh
 tests/     # unit + local integration
 docs/      # SPEC.md, PLAN.md, HOME_ASSISTANT.md/.uk.md, images/

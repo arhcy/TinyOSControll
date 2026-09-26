@@ -127,11 +127,10 @@ Snap Docker ізолює мережу та змінює шлях сокета:
 
 ## Home Assistant
 
-У репозиторії є кастомна інтеграція `custom_components/oscontroll/` та готовий
-Lovelace-дашборд: агенти, телеметрія, метрики GPU та керування на дашборді
-Home Assistant.
+У репозиторії є кастомна інтеграція `custom_components/oscontroll/`:
+агенти, телеметрія, метрики GPU та керування в Home Assistant.
 
-Встановлення, налаштування та дашборд:
+Встановлення та налаштування:
 [docs/HOME_ASSISTANT.uk.md](docs/HOME_ASSISTANT.uk.md).
 
 ## Локальне тестування (без реальних серверів)
@@ -150,7 +149,7 @@ python3 -m venv .venv
 common/    # protocol, tls, wol (спільний код)
 agent/     # agent.py, hostcmd.sh, entrypoint.sh, Dockerfile
 main/      # main.py, web/, Dockerfile
-deploy/    # docker-compose.yml + .env.example для main і agent, дашборд HA
+deploy/    # docker-compose.yml + .env.example для main і agent
 tools/     # gen-certs.sh
 tests/     # модульні + локальна інтеграція
 docs/      # SPEC.md, PLAN.md, HOME_ASSISTANT.md/.uk.md, images/
