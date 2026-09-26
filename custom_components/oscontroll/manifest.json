@@ -1,0 +1,10 @@
+{
+  "domain": "oscontroll",
+  "name": "OSControll",
+  "codeowners": [],
+  "config_flow": true,
+  "documentation": "https://github.com/arhcy/TinyOSControll",
+  "issue_tracker": "https://github.com/arhcy/TinyOSControll/issues",
+  "iot_class": "localpush",
+  "version": "1.0.0"
+}

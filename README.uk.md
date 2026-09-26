@@ -125,6 +125,29 @@ Snap Docker ізолює мережу та змінює шлях сокета:
 - **Телеметрія** (раз на секунду): `amd-smi monitor`, температури CPU,
   RAM, SWAP, load, uptime.
 
+## Home Assistant
+
+У репозиторії є кастомна інтеграція `custom_components/oscontroll/`, яка
+показує агентів, телеметрію та керування на дашборді Home Assistant.
+
+1. Скопіюйте папку `custom_components/oscontroll` у каталог конфігурації
+   Home Assistant (або додайте цей репозиторій у HACS як кастомний і
+   встановіть "OSControll").
+2. Перезавантажте Home Assistant.
+3. Налаштування → Пристрої та сервіси → Додати інтеграцію → **OSControll**:
+   - URL: `https://<main-host>:8443`
+   - API-токен: `API_TOKEN` з `.env` main
+   - Якщо main використовує self-signed сертифікат (за замовчуванням),
+     вимкніть "Перевіряти SSL-сертифікат".
+4. Додайте сутності на дашборд: сенсори (агентів у мережі, CPU/RAM/SWAP,
+   потужність/температури/частоти/навантаження/VRAM по кожному GPU),
+   бінарні сенсори (агент у мережі, контейнер запущений) та кнопки
+   (Розбудити / Вимкнути / Перезавантажити, start / stop / restart
+   контейнера).
+
+Інтеграція опитує REST API main кожні 10 секунд; нові агенти та GPU
+з'являються автоматично, без перезавантаження.
+
 ## Локальне тестування (без реальних серверів)
 
 ```bash
@@ -145,4 +168,5 @@ deploy/    # docker-compose.yml + .env.example для main і agent
 tools/     # gen-certs.sh
 tests/     # модульні + локальна інтеграція
 docs/      # SPEC.md, PLAN.md, images/
+custom_components/  # інтеграція Home Assistant (oscontroll)
 ```

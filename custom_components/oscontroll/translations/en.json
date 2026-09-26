@@ -1,0 +1,98 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "OSControll",
+        "description": "Connect to an OSControll main server.",
+        "data": {
+          "url": "URL of the main server",
+          "token": "API token",
+          "verify_ssl": "Verify SSL certificate"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Cannot connect to the main server",
+      "invalid_auth": "Invalid API token",
+      "ssl_error": "SSL certificate verification failed. If the main server uses a self-signed certificate, disable SSL verification.",
+      "unknown": "Unexpected error"
+    },
+    "abort": {
+      "already_configured": "The main server is already configured"
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "online": {
+        "name": "Online"
+      },
+      "container_running": {
+        "name": "{container} running"
+      }
+    },
+    "button": {
+      "wake": {
+        "name": "Wake"
+      },
+      "power_off": {
+        "name": "Power off"
+      },
+      "reboot": {
+        "name": "Reboot"
+      },
+      "container_start": {
+        "name": "{container} start"
+      },
+      "container_stop": {
+        "name": "{container} stop"
+      },
+      "container_restart": {
+        "name": "{container} restart"
+      }
+    },
+    "sensor": {
+      "agents_online": {
+        "name": "Online agents"
+      },
+      "cpu_temp": {
+        "name": "CPU temperature"
+      },
+      "ram_percent": {
+        "name": "RAM usage"
+      },
+      "ram_used": {
+        "name": "RAM used"
+      },
+      "swap_percent": {
+        "name": "Swap usage"
+      },
+      "swap_used": {
+        "name": "Swap used"
+      },
+      "gpu_power": {
+        "name": "GPU {index} power"
+      },
+      "gpu_temp": {
+        "name": "GPU {index} temperature"
+      },
+      "gpu_mem_temp": {
+        "name": "GPU {index} memory temperature"
+      },
+      "gpu_gfx_clock": {
+        "name": "GPU {index} GFX clock"
+      },
+      "gpu_gfx_utilization": {
+        "name": "GPU {index} GFX utilization"
+      },
+      "gpu_mem_utilization": {
+        "name": "GPU {index} memory utilization"
+      },
+      "gpu_vram_used": {
+        "name": "GPU {index} VRAM used"
+      },
+      "gpu_vram_total": {
+        "name": "GPU {index} VRAM total"
+      }
+    }
+  }
+}

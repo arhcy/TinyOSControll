@@ -1,0 +1,98 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "OSControll",
+        "description": "Підключення до головного сервера OSControll.",
+        "data": {
+          "url": "URL головного сервера",
+          "token": "API-токен",
+          "verify_ssl": "Перевіряти SSL-сертифікат"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Не вдалося підключитися до головного сервера",
+      "invalid_auth": "Невірний API-токен",
+      "ssl_error": "Не вдалося перевірити SSL-сертифікат. Якщо головний сервер використовує self-signed сертифікат, вимкніть перевірку SSL.",
+      "unknown": "Непередбачена помилка"
+    },
+    "abort": {
+      "already_configured": "Головний сервер уже налаштовано"
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "online": {
+        "name": "У мережі"
+      },
+      "container_running": {
+        "name": "{container} запущений"
+      }
+    },
+    "button": {
+      "wake": {
+        "name": "Розбудити"
+      },
+      "power_off": {
+        "name": "Вимкнути"
+      },
+      "reboot": {
+        "name": "Перезавантажити"
+      },
+      "container_start": {
+        "name": "{container} старт"
+      },
+      "container_stop": {
+        "name": "{container} стоп"
+      },
+      "container_restart": {
+        "name": "{container} рестарт"
+      }
+    },
+    "sensor": {
+      "agents_online": {
+        "name": "Агентів у мережі"
+      },
+      "cpu_temp": {
+        "name": "Температура CPU"
+      },
+      "ram_percent": {
+        "name": "Використання RAM"
+      },
+      "ram_used": {
+        "name": "RAM використано"
+      },
+      "swap_percent": {
+        "name": "Використання swap"
+      },
+      "swap_used": {
+        "name": "Swap використано"
+      },
+      "gpu_power": {
+        "name": "Потужність GPU {index}"
+      },
+      "gpu_temp": {
+        "name": "Температура GPU {index}"
+      },
+      "gpu_mem_temp": {
+        "name": "Температура пам'яті GPU {index}"
+      },
+      "gpu_gfx_clock": {
+        "name": "Частота GFX GPU {index}"
+      },
+      "gpu_gfx_utilization": {
+        "name": "Навантаження GFX GPU {index}"
+      },
+      "gpu_mem_utilization": {
+        "name": "Навантаження пам'яті GPU {index}"
+      },
+      "gpu_vram_used": {
+        "name": "VRAM використано GPU {index}"
+      },
+      "gpu_vram_total": {
+        "name": "VRAM загалом GPU {index}"
+      }
+    }
+  }
+}

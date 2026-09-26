@@ -125,6 +125,29 @@ simply empty (not an error).
 - **Telemetry** (once per second): `amd-smi monitor`, CPU temperatures,
   RAM, SWAP, load, uptime.
 
+## Home Assistant
+
+The repository includes a custom integration,
+`custom_components/oscontroll/`, that shows agents, telemetry and controls
+in a Home Assistant dashboard.
+
+1. Copy the `custom_components/oscontroll` folder into your Home Assistant
+   config directory (or add this repository to HACS as a custom repo and
+   install "OSControll").
+2. Restart Home Assistant.
+3. Settings → Devices & Services → Add Integration → **OSControll**:
+   - URL: `https://<main-host>:8443`
+   - API token: the `API_TOKEN` from main's `.env`
+   - If main uses a self-signed certificate (the default), disable
+     "Verify SSL certificate".
+4. Add the entities to a dashboard: sensors (online agents, CPU/RAM/SWAP,
+   per-GPU power/temperature/clocks/utilization/VRAM), binary sensors
+   (agent online, container running) and buttons (Wake / Power off /
+   Reboot, container start / stop / restart).
+
+The integration polls the main REST API every 10 seconds; new agents and
+GPUs are picked up automatically without a restart.
+
 ## Local testing (without real servers)
 
 ```bash
@@ -145,4 +168,5 @@ deploy/    # docker-compose.yml + .env.example for main and agent
 tools/     # gen-certs.sh
 tests/     # unit + local integration
 docs/      # SPEC.md, PLAN.md, images/
+custom_components/  # Home Assistant integration (oscontroll)
 ```
