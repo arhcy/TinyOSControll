@@ -51,6 +51,7 @@ class AgentBinarySensor(
         self._attr_device_info = device_info
         self._value_fn = value_fn
         self._attr_unique_id = unique_id
+        self._attr_translation_key = description.key
         if translation_placeholders:
             self._attr_translation_placeholders = translation_placeholders
 
