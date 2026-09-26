@@ -1,0 +1,185 @@
+# OSControll — готовий Lovelace-дашборд (YAML-режим)
+#
+# Віддзеркалює веб-панель (main/web): одна картка на агента зі статусом,
+# телеметрією (CPU/RAM/SWAP), метриками GPU, кнопками Wake / Power off /
+# Reboot та керуванням контейнерами (стан + start / stop / restart).
+#
+# Встановлення: див. docs/HOME_ASSISTANT.uk.md.
+# Перед збереженням адаптуйте назви агентів, MAC/IP і контейнери під свої
+# .env (deploy/main/.env та deploy/agent/.env).
+#
+# Entity ID нижче — за замовчуваннями інтеграції oscontroll (генеруються з
+# англійських назв сутностей). Якщо Home Assistant додав суфікс, перевірте
+# фактичні ID: Налаштування → Пристрої та сервіси → OSControll.
+
+views:
+  - title: OSControll
+    path: oscontroll
+    icon: mdi:server
+    max-width: 1100px
+    cards:
+      # --- header ------------------------------------------------------------
+      - type: markdown
+        content: >-
+          # OSControll
+          Агентів у мережі: **{{ states('sensor.oscontroll_online_agents') }}**
+
+      # --- agent: alpha --------------------------------------------------------
+      - type: vertical-stack
+        cards:
+          - type: markdown
+            content: >-
+              ## alpha
+              MAC `AA:BB:CC:DD:EE:FF` · IP `192.168.1.21`
+          - type: state-switch
+            entity: binary_sensor.alpha_online
+            states:
+              "on":
+                type: vertical-stack
+                cards:
+                  - type: entities
+                    show_header: false
+                    entities:
+                      - type: section
+                        label: Telemetry
+                        entities:
+                          - entity: sensor.alpha_cpu_temperature
+                          - entity: sensor.alpha_ram_usage
+                          - entity: sensor.alpha_ram_used
+                          - entity: sensor.alpha_swap_usage
+                          - entity: sensor.alpha_swap_used
+                      - type: section
+                        label: GPU 0
+                        entities:
+                          - entity: sensor.alpha_gpu_0_power
+                          - entity: sensor.alpha_gpu_0_temperature
+                          - entity: sensor.alpha_gpu_0_gfx_clock
+                          - entity: sensor.alpha_gpu_0_gfx_utilization
+                          - entity: sensor.alpha_gpu_0_memory_utilization
+                          - entity: sensor.alpha_gpu_0_vram_used
+                          - entity: sensor.alpha_gpu_0_vram_total
+                      - type: section
+                        label: nginx
+                        entities:
+                          - entity: binary_sensor.alpha_nginx_running
+                          - entity: button.alpha_nginx_start
+                          - entity: button.alpha_nginx_stop
+                          - entity: button.alpha_nginx_restart
+                      - type: section
+                        label: postgres
+                        entities:
+                          - entity: binary_sensor.alpha_postgres_running
+                          - entity: button.alpha_postgres_start
+                          - entity: button.alpha_postgres_stop
+                          - entity: button.alpha_postgres_restart
+                  - type: horizontal-stack
+                    cards:
+                      - type: button
+                        entity: button.alpha_wake
+                        name: Wake
+                        icon: mdi:lan-connect
+                        show_state: false
+                      - type: button
+                        entity: button.alpha_power_off
+                        name: Power off
+                        icon: mdi:power
+                        show_state: false
+                      - type: button
+                        entity: button.alpha_reboot
+                        name: Reboot
+                        icon: mdi:restart
+                        show_state: false
+              "off": &alpha_off
+                type: vertical-stack
+                cards:
+                  - type: markdown
+                    content: >-
+                      **offline**
+                  - type: button
+                    entity: button.alpha_wake
+                    name: Wake
+                    icon: mdi:lan-connect
+                    show_state: false
+              "unavailable": *alpha_off
+              "unknown": *alpha_off
+
+      # --- agent: beta ---------------------------------------------------------
+      - type: vertical-stack
+        cards:
+          - type: markdown
+            content: >-
+              ## beta
+              MAC `11:22:33:44:55:66` · IP `192.168.1.22`
+          - type: state-switch
+            entity: binary_sensor.beta_online
+            states:
+              "on":
+                type: vertical-stack
+                cards:
+                  - type: entities
+                    show_header: false
+                    entities:
+                      - type: section
+                        label: Telemetry
+                        entities:
+                          - entity: sensor.beta_cpu_temperature
+                          - entity: sensor.beta_ram_usage
+                          - entity: sensor.beta_ram_used
+                          - entity: sensor.beta_swap_usage
+                          - entity: sensor.beta_swap_used
+                      # Якщо beta має AMD GPU — розкоментуйте цей розділ
+                      # (копія з alpha, ID з префіксом beta_).
+                      # - type: section
+                      #   label: GPU 0
+                      #   entities:
+                      #     - entity: sensor.beta_gpu_0_power
+                      #     - entity: sensor.beta_gpu_0_temperature
+                      #     - entity: sensor.beta_gpu_0_gfx_clock
+                      #     - entity: sensor.beta_gpu_0_gfx_utilization
+                      #     - entity: sensor.beta_gpu_0_memory_utilization
+                      #     - entity: sensor.beta_gpu_0_vram_used
+                      #     - entity: sensor.beta_gpu_0_vram_total
+                      - type: section
+                        label: nginx
+                        entities:
+                          - entity: binary_sensor.beta_nginx_running
+                          - entity: button.beta_nginx_start
+                          - entity: button.beta_nginx_stop
+                          - entity: button.beta_nginx_restart
+                      - type: section
+                        label: postgres
+                        entities:
+                          - entity: binary_sensor.beta_postgres_running
+                          - entity: button.beta_postgres_start
+                          - entity: button.beta_postgres_stop
+                          - entity: button.beta_postgres_restart
+                  - type: horizontal-stack
+                    cards:
+                      - type: button
+                        entity: button.beta_wake
+                        name: Wake
+                        icon: mdi:lan-connect
+                        show_state: false
+                      - type: button
+                        entity: button.beta_power_off
+                        name: Power off
+                        icon: mdi:power
+                        show_state: false
+                      - type: button
+                        entity: button.beta_reboot
+                        name: Reboot
+                        icon: mdi:restart
+                        show_state: false
+              "off": &beta_off
+                type: vertical-stack
+                cards:
+                  - type: markdown
+                    content: >-
+                      **offline**
+                  - type: button
+                    entity: button.beta_wake
+                    name: Wake
+                    icon: mdi:lan-connect
+                    show_state: false
+              "unavailable": *beta_off
+              "unknown": *beta_off

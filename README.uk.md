@@ -127,26 +127,12 @@ Snap Docker ізолює мережу та змінює шлях сокета:
 
 ## Home Assistant
 
-У репозиторії є кастомна інтеграція `custom_components/oscontroll/`, яка
-показує агентів, телеметрію та керування на дашборді Home Assistant.
+У репозиторії є кастомна інтеграція `custom_components/oscontroll/` та готовий
+Lovelace-дашборд: агенти, телеметрія, метрики GPU та керування на дашборді
+Home Assistant.
 
-1. Скопіюйте папку `custom_components/oscontroll` у каталог конфігурації
-   Home Assistant (або додайте цей репозиторій у HACS як кастомний і
-   встановіть "OSControll").
-2. Перезавантажте Home Assistant.
-3. Налаштування → Пристрої та сервіси → Додати інтеграцію → **OSControll**:
-   - URL: `https://<main-host>:8443`
-   - API-токен: `API_TOKEN` з `.env` main
-   - Якщо main використовує self-signed сертифікат (за замовчуванням),
-     вимкніть "Перевіряти SSL-сертифікат".
-4. Додайте сутності на дашборд: сенсори (агентів у мережі, CPU/RAM/SWAP,
-   потужність/температури/частоти/навантаження/VRAM по кожному GPU),
-   бінарні сенсори (агент у мережі, контейнер запущений) та кнопки
-   (Розбудити / Вимкнути / Перезавантажити, start / stop / restart
-   контейнера).
-
-Інтеграція опитує REST API main кожні 10 секунд; нові агенти та GPU
-з'являються автоматично, без перезавантаження.
+Встановлення, налаштування та дашборд:
+[docs/HOME_ASSISTANT.uk.md](docs/HOME_ASSISTANT.uk.md).
 
 ## Локальне тестування (без реальних серверів)
 
@@ -164,9 +150,9 @@ python3 -m venv .venv
 common/    # protocol, tls, wol (спільний код)
 agent/     # agent.py, hostcmd.sh, entrypoint.sh, Dockerfile
 main/      # main.py, web/, Dockerfile
-deploy/    # docker-compose.yml + .env.example для main і agent
+deploy/    # docker-compose.yml + .env.example для main і agent, дашборд HA
 tools/     # gen-certs.sh
 tests/     # модульні + локальна інтеграція
-docs/      # SPEC.md, PLAN.md, images/
+docs/      # SPEC.md, PLAN.md, HOME_ASSISTANT.md/.uk.md, images/
 custom_components/  # інтеграція Home Assistant (oscontroll)
 ```

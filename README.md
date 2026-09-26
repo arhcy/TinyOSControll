@@ -127,26 +127,12 @@ simply empty (not an error).
 
 ## Home Assistant
 
-The repository includes a custom integration,
-`custom_components/oscontroll/`, that shows agents, telemetry and controls
-in a Home Assistant dashboard.
+A custom integration (`custom_components/oscontroll/`) plus a ready-made
+Lovelace dashboard bring agents, telemetry, GPU metrics and controls into
+Home Assistant.
 
-1. Copy the `custom_components/oscontroll` folder into your Home Assistant
-   config directory (or add this repository to HACS as a custom repo and
-   install "OSControll").
-2. Restart Home Assistant.
-3. Settings → Devices & Services → Add Integration → **OSControll**:
-   - URL: `https://<main-host>:8443`
-   - API token: the `API_TOKEN` from main's `.env`
-   - If main uses a self-signed certificate (the default), disable
-     "Verify SSL certificate".
-4. Add the entities to a dashboard: sensors (online agents, CPU/RAM/SWAP,
-   per-GPU power/temperature/clocks/utilization/VRAM), binary sensors
-   (agent online, container running) and buttons (Wake / Power off /
-   Reboot, container start / stop / restart).
-
-The integration polls the main REST API every 10 seconds; new agents and
-GPUs are picked up automatically without a restart.
+Installation, configuration and dashboard setup:
+[docs/HOME_ASSISTANT.md](docs/HOME_ASSISTANT.md).
 
 ## Local testing (without real servers)
 
@@ -164,9 +150,9 @@ See `docs/PLAN.md` section 3.2 for the local integration scenario.
 common/    # protocol, tls, wol (shared code)
 agent/     # agent.py, hostcmd.sh, entrypoint.sh, Dockerfile
 main/      # main.py, web/, Dockerfile
-deploy/    # docker-compose.yml + .env.example for main and agent
+deploy/    # docker-compose.yml + .env.example for main, agent, HA dashboard
 tools/     # gen-certs.sh
 tests/     # unit + local integration
-docs/      # SPEC.md, PLAN.md, images/
+docs/      # SPEC.md, PLAN.md, HOME_ASSISTANT.md/.uk.md, images/
 custom_components/  # Home Assistant integration (oscontroll)
 ```
