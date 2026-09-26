@@ -6,9 +6,18 @@
 
 ## 1. Встановлення інтеграції
 
+**Варіант А — через HACS:**
+
+1. HACS → **⋮ → Кастомні репозиторії** → додайте
+   `https://github.com/arhcy/TinyOSControll` (категорія: **Integration**).
+2. Відкрийте репозиторій **OSControll** і натисніть **Download**
+   (оберіть реліз `v1.0.0`, якщо його пропонують).
+3. Перезавантажте Home Assistant.
+
+**Варіант Б — вручну:**
+
 1. Скопіюйте папку `custom_components/oscontroll` у каталог конфігурації
-   Home Assistant (або додайте цей репозиторій у HACS як кастомний і
-   встановіть "OSControll").
+   Home Assistant.
 2. Перезавантажте Home Assistant.
 
 ## 2. Налаштування

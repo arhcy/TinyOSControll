@@ -6,9 +6,18 @@ Lovelace dashboard: agents, telemetry, AMD GPU metrics and controls
 
 ## 1. Installing the integration
 
+**Option A — via HACS:**
+
+1. HACS → **⋮ → Custom repositories** → add
+   `https://github.com/arhcy/TinyOSControll` (category: **Integration**).
+2. Open the **OSControll** repository and press **Download** (pick the
+   `v1.0.0` release if it is offered).
+3. Restart Home Assistant.
+
+**Option B — manual:**
+
 1. Copy the `custom_components/oscontroll` folder into your Home Assistant
-   config directory (or add this repository to HACS as a custom repo and
-   install "OSControll").
+   config directory.
 2. Restart Home Assistant.
 
 ## 2. Configuration
