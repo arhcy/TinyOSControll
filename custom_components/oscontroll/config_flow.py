@@ -38,6 +38,7 @@ class OscontrollConfigFlow(ConfigFlow, domain=DOMAIN):
     ) -> ConfigFlowResult:
         errors: dict[str, str] = {}
         if user_input is not None:
+            await self.async_set_unique_id(user_input[CONF_URL])
             self._abort_if_unique_id_configured()
             try:
                 await self._validate(user_input)
@@ -54,7 +55,6 @@ class OscontrollConfigFlow(ConfigFlow, domain=DOMAIN):
                 return self.async_create_entry(
                     title=user_input[CONF_URL],
                     data=user_input,
-                    unique_id=user_input[CONF_URL],
                 )
 
         return self.async_show_form(
