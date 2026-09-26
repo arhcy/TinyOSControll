@@ -42,6 +42,7 @@ class AgentBinarySensor(
         agent_name: str,
         device_info: dict,
         value_fn: Callable[[dict], bool | None],
+        unique_id: str,
         translation_placeholders: dict[str, str] | None = None,
     ) -> None:
         super().__init__(coordinator)
@@ -49,6 +50,7 @@ class AgentBinarySensor(
         self._agent_name = agent_name
         self._attr_device_info = device_info
         self._value_fn = value_fn
+        self._attr_unique_id = unique_id
         if translation_placeholders:
             self._attr_translation_placeholders = translation_placeholders
 
@@ -82,6 +84,7 @@ async def async_setup_entry(
                         name,
                         device_info,
                         lambda a: bool(a.get("online")),
+                        unique_id=f"{DOMAIN}:{name}:online",
                     )
                 )
             for container in (agent.get("containers") or {}):
@@ -99,6 +102,7 @@ async def async_setup_entry(
                                 .get("state")
                                 == "running"
                             ),
+                            unique_id=f"{DOMAIN}:{name}:container:{container}",
                             translation_placeholders={"container": container},
                         )
                     )

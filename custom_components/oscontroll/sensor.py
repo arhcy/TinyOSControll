@@ -37,12 +37,14 @@ class OscontrollSensor(CoordinatorEntity[OscontrollCoordinator], SensorEntity):
         description: SensorEntityDescription,
         device_info: dict,
         value_fn: Callable[[dict], Any],
+        unique_id: str,
         translation_placeholders: dict[str, str] | None = None,
     ) -> None:
         super().__init__(coordinator)
         self.entity_description = description
         self._attr_device_info = device_info
         self._value_fn = value_fn
+        self._attr_unique_id = unique_id
         if translation_placeholders:
             self._attr_translation_placeholders = translation_placeholders
 
@@ -219,6 +221,7 @@ async def async_setup_entry(
                 AGENTS_ONLINE,
                 hub_device_info(),
                 lambda data: sum(1 for a in data.values() if a.get("online")),
+                unique_id=f"{DOMAIN}:{AGENTS_ONLINE.key}",
             )
         ]
     )
@@ -236,6 +239,7 @@ async def async_setup_entry(
                             description,
                             device_info,
                             value_fn,
+                            unique_id=f"{DOMAIN}:{name}:{description.key}",
                             agent_name=name,
                         )
                     )
@@ -250,6 +254,7 @@ async def async_setup_entry(
                                 description,
                                 agent_device_info(agent),
                                 value_fn,
+                                unique_id=f"{DOMAIN}:{name}:gpu{gpu['gpu']}:{description.key}",
                                 agent_name=name,
                                 gpu_index=gpu["gpu"],
                                 translation_placeholders={"index": str(gpu["gpu"])},
